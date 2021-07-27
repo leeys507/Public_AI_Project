@@ -68,7 +68,7 @@ def get_args_parser(add_help=True):
     import argparse
     parser = argparse.ArgumentParser(description='PyTorch Detection Training', add_help=add_help)
 
-    parser.add_argument('--data-path', default='C:/Users/me1/Desktop/ai_data', help='dataset') # modify
+    parser.add_argument('--data-path', default=os.path.abspath("../../Desktop/ai_data"), help='dataset') # modify # 'C:/Users/me1/Desktop/ai_data'
     parser.add_argument('--dataset', default='Car', help='dataset') # modify
     parser.add_argument('--model', default='retinanet_resnet50_fpn', help='model') # fasterrcnn_resnet50_fpn
     parser.add_argument('--device', default='cuda', help='device')
@@ -94,7 +94,7 @@ def get_args_parser(add_help=True):
     parser.add_argument('--lr-gamma', default=0.1, type=float,
                         help='decrease lr by a factor of lr-gamma (multisteplr scheduler only)')
     parser.add_argument('--print-freq', default=20, type=int, help='print frequency')
-    parser.add_argument('--output-dir', default='.', help='path where to save')
+    parser.add_argument('--output-dir', default=os.path.abspath("../../Desktop/weights"), help='path where to save') # modify
     parser.add_argument('--resume', default='', help='resume from checkpoint')
     parser.add_argument('--start_epoch', default=0, type=int, help='start epoch')
     parser.add_argument('--aspect-ratio-group-factor', default=3, type=int)
@@ -144,7 +144,7 @@ def get_args_parser(add_help=True):
 def main(args):
     save_model_pth_name = "model_car"
     save_checkpoint_pth_name = "checkpoint_car"
-
+    
     if args.output_dir:
         utils.mkdir(args.output_dir)
 
