@@ -223,7 +223,6 @@ def main(args):
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
         args.start_epoch = checkpoint['epoch'] + 1
-        save_model_pth_name = "model_car_resume"
 
     if args.test_only:
         if 'coco' in args.dataset:
