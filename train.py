@@ -261,9 +261,10 @@ def main(args):
                 dataset_valid = CarDetectionOnlyImage(img_folder=args.data_path, all_images_path=images_valid_path, 
                     image_set="val", transforms=get_transform(True, args.data_augmentation))
                 
+                valid_sampler = torch.utils.data.SequentialSampler(dataset_valid)
                 data_loader_valid = torch.utils.data.DataLoader(
                     dataset_valid, batch_size=1,
-                    sampler=test_sampler, num_workers=args.workers,
+                    sampler=valid_sampler, num_workers=args.workers,
                     collate_fn=utils.collate_fn)
 
                 for images, filenames in data_loader_valid:
@@ -286,15 +287,14 @@ def main(args):
                             img = cv2.putText(img, class_names[label], (point[0] + 2, point[1] - 9), 0, 0.5, (0, 0, 255), 2)
                             img = cv2.putText(img, str(round(score.item(), 2)), (point[0] + 2, point[1] + 9), 0, 0.4, (255, 0, 0), 2)
 
-                        if skip_image_count < cnt:
+                        if skip_image_count <= cnt:
                             cv2.imshow(f"red: prediction / threshold: {threshold} / {filename}", img)
                             cv2.waitKey()
                             cv2.destroyAllWindows()
 
                         cnt += 1
                         if cnt == check_image_count:
-                            exit()
-                            
+                            exit()    
             else:
                 for images, targets in data_loader_test:
                     images = list(img.to(device) for img in images)
@@ -333,6 +333,7 @@ def main(args):
                         cnt += 1
                         if cnt == check_image_count:
                             exit()
+        exit()
 
     print("Start training")
     start_time = time.time()
