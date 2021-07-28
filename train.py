@@ -240,7 +240,8 @@ def main(args):
         cpu_device = torch.device("cpu")
         
         threshold = 0.6
-        check_image_count = 10
+        skip_image_count = 0
+        check_image_count = skip_image_count + 10
         # class_names = ("__background__", "aeroplane", "bicycle", "bird", "boat", "bottle", 
         # "bus", "car", "cat", "chair", "cow", 
         # "diningtable", "dog", "horse", "motorbike", "person", 
@@ -285,9 +286,10 @@ def main(args):
                             img = cv2.putText(img, class_names[label], (point[0] + 2, point[1] - 9), 0, 0.5, (0, 0, 255), 2)
                             img = cv2.putText(img, str(round(score.item(), 2)), (point[0] + 2, point[1] + 9), 0, 0.4, (255, 0, 0), 2)
 
-                        cv2.imshow(f"red: prediction / threshold: {threshold} / {filename}", img)
-                        cv2.waitKey()
-                        cv2.destroyAllWindows()
+                        if skip_image_count < cnt:
+                            cv2.imshow(f"red: prediction / threshold: {threshold} / {filename}", img)
+                            cv2.waitKey()
+                            cv2.destroyAllWindows()
 
                         cnt += 1
                         if cnt == check_image_count:

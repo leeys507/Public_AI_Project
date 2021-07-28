@@ -4,6 +4,6 @@ python train.py --resume model_25.pth --visualize-only
 python train.py --dataset Car --epochs 15
 python train.py --dataset Car --resume model_car_14.pth --visualize-only
 python train.py --dataset Car --resume model_car_14.pth --test-only
-python train.py --dataset Car --resume model_car_14.pth --visualize-only --valid-only-img
+python train.py --dataset Car --resume ../../Desktop/weights/model_car_29.pth --visualize-only --valid-only-img
 python train.py --dataset Car --epochs 15 --lr 0.0015 --batch-size 4
-python train.py --dataset Car --epochs 15 --batch-size 4 --resume ../../Desktop/weights/model_car_14.pth
+python train.py --dataset Car --epochs 30 --batch-size 4 --resume ../../Desktop/weights/model_car_24.pth
