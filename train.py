@@ -69,7 +69,7 @@ def get_args_parser(add_help=True):
     import argparse
     parser = argparse.ArgumentParser(description='PyTorch Detection Training', add_help=add_help)
 
-    parser.add_argument('--data-path', default=os.path.abspath("../../ai_data"), help='dataset') # modify # 'C:/Users/me1/Desktop/ai_data'
+    parser.add_argument('--data-path', default=os.path.abspath("../../Desktop/ai_data"), help='dataset') # modify # 'C:/Users/me1/Desktop/ai_data'
     parser.add_argument('--dataset', default='Car', help='dataset') # modify
     parser.add_argument('--model', default='retinanet_resnet50_fpn', help='model') # fasterrcnn_resnet50_fpn
     parser.add_argument('--device', default='cuda', help='device')
