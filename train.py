@@ -41,6 +41,7 @@ import presets
 import utils
 import cv2
 import glob
+from iou import *
 
 def get_dataset(name, image_set, transform, data_path, download=False):
     paths = {
@@ -68,7 +69,7 @@ def get_args_parser(add_help=True):
     import argparse
     parser = argparse.ArgumentParser(description='PyTorch Detection Training', add_help=add_help)
 
-    parser.add_argument('--data-path', default=os.path.abspath("../../Desktop/ai_data"), help='dataset') # modify # 'C:/Users/me1/Desktop/ai_data'
+    parser.add_argument('--data-path', default=os.path.abspath("../../ai_data"), help='dataset') # modify # 'C:/Users/me1/Desktop/ai_data'
     parser.add_argument('--dataset', default='Car', help='dataset') # modify
     parser.add_argument('--model', default='retinanet_resnet50_fpn', help='model') # fasterrcnn_resnet50_fpn
     parser.add_argument('--device', default='cuda', help='device')
@@ -279,8 +280,11 @@ def main(args):
                     for img, filename, output in zip(images, filenames, outputs):
                         img = img.cpu().numpy().transpose(1, 2, 0).copy()
 
-                        for point, score, label in zip(output["boxes"], output["scores"], output["labels"]):
+                        indexes = indexing_removal_with_iou(output)
+
+                        for i, (point, score, label) in enumerate(zip(output["boxes"], output["scores"], output["labels"])):
                             if score < threshold: continue
+                            elif i in indexes: continue
                             point = point.type(torch.IntTensor).numpy()
                             # x, y / xmax, ymax
                             img = cv2.rectangle(img, (point[0], point[1]), (point[2], point[3]), (0, 0, 255), 2)
@@ -312,8 +316,11 @@ def main(args):
                         img = img.cpu().numpy().transpose(1, 2, 0).copy() # cv2 = BGR, PIL RGB
                         # c, w, h -> w, h, c  / transpose axis -> 0, 1, 2 -> 1, 2, 0
 
-                        for point, score, label in zip(output["boxes"], output["scores"], output["labels"]):
+                        indexes = indexing_removal_with_iou(output)
+
+                        for i, (point, score, label) in enumerate(zip(output["boxes"], output["scores"], output["labels"])):
                             if score < threshold: continue
+                            elif i in indexes: continue
                             point = point.type(torch.IntTensor).numpy()
                             # x, y / xmax, ymax
                             img = cv2.rectangle(img, (point[0], point[1]), (point[2], point[3]), (0, 0, 255), 2)
