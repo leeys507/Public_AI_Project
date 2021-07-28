@@ -15,6 +15,8 @@ def get_union_areas(box1, box2, interArea=None):
 
 
 def get_intersection_area(box1, box2):
+    if boxes_intersect(box1, box2) is False:
+        return 0
     x1 = max(box1[0], box2[0])
     y1 = max(box1[1], box2[1])
     x2 = min(box1[2], box2[2])
@@ -55,9 +57,15 @@ def indexing_removal_with_iou(output):  # save and return indexes to dismiss
             box1 = output["boxes"][i]
             box2 = output["boxes"][j]
             score1, score2 = output["scores"][i], output["scores"][j]
-            if 0.45 < intersection_over_union(box1, box2) < 1 and score1 > score2:
-                will_remove_indexes.add(j)
-            elif 0.45 < intersection_over_union(box1, box2) < 1 and score1 < score2:
-                will_remove_indexes.add(i)
+
+            box1_size = get_area(box1)
+            box2_size = get_area(box2)
+            min_box_size = min(box1_size, box2_size)
+
+            if 0.45 < intersection_over_union(box1, box2) < 1 or get_intersection_area(box1, box2)/min_box_size > 0.65:
+                if score1 > score2:
+                    will_remove_indexes.add(j)
+                elif score1 < score2:
+                    will_remove_indexes.add(i)
 
     return will_remove_indexes

@@ -284,7 +284,7 @@ def main(args):
 
                         for i, (point, score, label) in enumerate(zip(output["boxes"], output["scores"], output["labels"])):
                             if score < threshold: continue
-                            elif i in indexes: continue
+                            if i in indexes: continue
                             point = point.type(torch.IntTensor).numpy()
                             # x, y / xmax, ymax
                             img = cv2.rectangle(img, (point[0], point[1]), (point[2], point[3]), (0, 0, 255), 2)
