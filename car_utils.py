@@ -83,10 +83,12 @@ class CarDetection(VisionDataset):
         return len(self.all_images_path)
 
 class CarDetectionOnlyImage(Dataset):
-    def __init__(self, img_folder, all_images_path, image_set, transforms = None):
+    def __init__(self, img_folder, all_images_path, image_set, seed=0, transforms=None):
         print("-"*30+"\n","Car_Detection Validation Only Image Init")
         print(img_folder, image_set, transforms)
 
+        random.seed(seed)
+        random.shuffle(all_images_path)
         self.all_images_path = all_images_path
         self.root = img_folder
 
