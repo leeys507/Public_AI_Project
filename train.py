@@ -196,6 +196,12 @@ def main(args):
             kwargs["rpn_score_thresh"] = args.rpn_score_thresh
     model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes, pretrained=args.pretrained,
                                                               **kwargs)
+    # plate model load
+    # if "Car" in args.dataset:
+    #     plate_model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes, pretrained=args.pretrained,
+    #                                                           **kwargs)
+    #     plate_model.load_state_dict(torch.load(os.path.abspath("../../Desktop/weights/model_plate_25.pth")))
+
     model.to(device)
     if args.distributed and args.sync_bn:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)

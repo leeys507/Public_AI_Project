@@ -222,6 +222,7 @@ def _write_car_results_file(all_boxes, image_index, root, classes):
                     continue
                 dets = dets[0]
                 # the VOCdevkit expects 1-based indices
+                index = index.split(".")[0] + "." + index.split(".")[-1].lower()
                 for k in range(dets.shape[0]):
                     f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
                             format(index, dets[k, -1],
