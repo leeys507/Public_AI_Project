@@ -90,8 +90,8 @@ def get_args_parser(add_help=True):
     parser.add_argument('--lr-scheduler', default="multisteplr", help='the lr scheduler (default: multisteplr)')
     parser.add_argument('--lr-step-size', default=8, type=int,
                         help='decrease lr every step-size epochs (multisteplr scheduler only)')
-    parser.add_argument('--lr-steps', default=[16, 22], nargs='+', type=int,
-                        help='decrease lr every step-size epochs (multisteplr scheduler only)')
+    parser.add_argument('--lr-steps', default=[15, 30], nargs='+', type=int,
+                        help='decrease lr every step-size epochs (multisteplr scheduler only)') # default 16, 22 modify
     parser.add_argument('--lr-gamma', default=0.1, type=float,
                         help='decrease lr by a factor of lr-gamma (multisteplr scheduler only)')
     parser.add_argument('--print-freq', default=20, type=int, help='print frequency')
@@ -223,6 +223,8 @@ def main(args):
         model_without_ddp.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+        # for g in optimizer.param_groups:
+        #     g['lr'] = 0.0025
         args.start_epoch = checkpoint['epoch'] + 1
 
     if args.test_only:
@@ -372,7 +374,8 @@ def main(args):
         elif 'ExDark' in args.dataset:
             ekdark_evaluate(model, data_loader_test, device=device)
         elif "Car" in args.dataset:
-            car_evaluate(model, data_loader_test, device=device)
+            if len(dataset_test) != 0:
+                car_evaluate(model, data_loader_test, device=device)
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))

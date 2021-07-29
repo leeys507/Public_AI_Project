@@ -83,10 +83,12 @@ class CarDetection(VisionDataset):
         return len(self.all_images_path)
 
 class CarDetectionOnlyImage(Dataset):
-    def __init__(self, img_folder, all_images_path, image_set, transforms = None):
-        print("-"*30+"\n","Car_Detection Validation Only Image Init")
+    def __init__(self, img_folder, all_images_path, image_set, seed=0, transforms=None):
+        print("-"*30+"\n","Car Detection Validation Only Image Init")
         print(img_folder, image_set, transforms)
 
+        random.seed(seed)
+        random.shuffle(all_images_path)
         self.all_images_path = all_images_path
         self.root = img_folder
 
@@ -116,7 +118,8 @@ def get_Car(root, image_set, transforms):
     transforms = T.Compose(t)
 
     print("Split Car Data")
-    images_train_path, images_test_path, labels_train_path, labels_test_path = get_car_image_path_split_list(img_folder=root, test_size=0.25)
+    images_train_path, images_test_path, labels_train_path, labels_test_path = \
+        get_car_image_path_split_list(img_folder=root, test_size=0.2)
 
     print("train data count:", len(images_train_path), "/ test data count:", len(images_test_path))
 
@@ -134,7 +137,7 @@ def get_Car(root, image_set, transforms):
     return dataset
 
 # car data split
-def get_car_image_path_split_list(img_folder, test_size= 0.25, seed=0):
+def get_car_image_path_split_list(img_folder, test_size=0.25, seed=0):
     all_images_path = sorted(glob.glob(os.path.join(img_folder, "Car_Data", "train", "*")))
     all_labels_path = sorted(glob.glob(os.path.join(img_folder, "Car_Data", "annotation", "*")))
 
