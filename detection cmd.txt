@@ -9,3 +9,7 @@ python train.py --dataset Car --epochs 15 --lr 0.0015 --batch-size 4
 python train.py --dataset Car --epochs 15 --batch-size 4 --lr-step-size 10
 python train.py --dataset Car --epochs 30 --batch-size 4 --resume ../../Desktop/weights/model_car_24.pth
 python train.py --dataset Car --epochs 20 --batch-size 4 --lr-step-size 10 --resume ../../Desktop/weights/model_car_14.pth
+python train.py --dataset Car --epochs 25 --batch-size 4 --resume ../../Desktop/weights/model_car_19.pth
+python train.py --dataset Car --resume ../../Desktop/weights/model_car_24.pth --visualize-only
+
+python train.py --dataset Car --epochs 20 --batch-size 4 --lr-step-size 15
