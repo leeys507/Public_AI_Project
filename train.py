@@ -289,6 +289,7 @@ def main(args):
                         img = img.cpu().numpy().transpose(1, 2, 0).copy()
 
                         indexes = indexing_removal_with_iou(output)
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
                         for i, (point, score, label) in enumerate(zip(output["boxes"], output["scores"], output["labels"])):
                             if score < threshold: continue
