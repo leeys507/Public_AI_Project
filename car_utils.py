@@ -197,6 +197,6 @@ def show_plate_in_object(imgs, device, transforms, model, threshold=0.6, show=Tr
                 cv2.imshow(f"plate in object / threshold: {threshold}", img)
                 cv2.waitKey()
                 cv2.destroyAllWindows()
-            crop_plate.append(img[point[1]:point[3], point[0]:point[2]])
+            crop_plate.append(img[point[1]:point[3], point[0]:point[2]]) # ymin:ymax, xmin:xmax
             break
     return crop_plate
