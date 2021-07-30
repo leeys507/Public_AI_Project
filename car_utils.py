@@ -8,6 +8,7 @@ import os
 from PIL import Image
 import numpy as np
 import random
+import cv2
 
 class ConvertCartoCOCO(object):
     CLASSES = (
@@ -162,3 +163,42 @@ def get_car_image_path_split_list(img_folder, test_size=0.25, seed=0):
     y_test = labels_path[divide_index:]
 
     return x_train, x_test, y_train, y_test
+
+def get_crop_object_images(img, boxes):
+    crop_imgs = []
+    for point in boxes:
+        crop_imgs.append(img.crop((point[0], point[1], point[2], point[3]))) # x, y, xmax, ymax
+
+    return crop_imgs
+
+def show_plate_in_object(imgs, device, transforms, model, threshold=0.6, show=True):
+    model.eval()
+    crop_plate = []
+    input_imgs = []
+    # cpu_device = torch.device("cpu")
+    if len(imgs) == 0: return None
+
+    for i in range(0, len(imgs)):
+        # img = Image.fromarray(imgs[i]).convert("RGB")
+        img, _ = transforms(imgs[i], None)
+        img.to(device)
+        input_imgs.append(img)
+    
+    outputs = model(input_imgs)
+    # outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
+
+    for img, output in zip(imgs, outputs):
+        for point, score, label in zip(output["boxes"], output["scores"], output["labels"]):
+            if score < threshold: continue
+            point = point.type(torch.IntTensor).numpy()
+            if show:
+                img = np.array(img)
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                img = cv2.rectangle(img, (point[0], point[1]), (point[2], point[3]), (0, 0, 255), 2)
+                img = cv2.putText(img, str(round(score.item(), 2)), (point[0] + 2, point[1] - 9), 0, 0.4, (255, 0, 0), 2)
+                cv2.imshow(f"plate in object / threshold: {threshold}", img)
+                cv2.waitKey()
+                cv2.destroyAllWindows()
+            crop_plate.append(img[point[1]:point[3], point[0]:point[2]])
+
+    return crop_plate

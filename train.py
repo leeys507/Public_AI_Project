@@ -27,12 +27,13 @@ import torch.utils.data
 import torchvision
 import torchvision.models.detection
 import torchvision.models.detection.mask_rcnn
+from torchvision.transforms import transforms
 # import torchvision.datasets.voc
 
 from coco_utils import get_coco, get_coco_kp
 from voc_utils import get_voc
 from exdark_utils import get_ExDark
-from car_utils import CarDetectionOnlyImage, get_Car
+from car_utils import CarDetectionOnlyImage, get_Car, get_crop_object_images, show_plate_in_object
 
 from group_by_aspect_ratio import GroupedBatchSampler, create_aspect_ratio_groups
 from engine import train_one_epoch, coco_evaluate, voc_evaluate, ekdark_evaluate, car_evaluate
@@ -41,6 +42,7 @@ import presets
 import utils
 import cv2
 import glob
+from PIL import Image
 from iou import *
 
 def get_dataset(name, image_set, transform, data_path, download=False):
@@ -133,6 +135,12 @@ def get_args_parser(add_help=True):
         help="Validation only image",
         action="store_true",
     )
+    parser.add_argument(
+        "--visualize-plate",
+        dest="visualize_plate",
+        help="visualize plate image",
+        action="store_true",
+    )
 
     # distributed training parameters
     parser.add_argument('--world-size', default=1, type=int,
@@ -197,10 +205,12 @@ def main(args):
     model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes, pretrained=args.pretrained,
                                                               **kwargs)
     # plate model load
-    # if "Car" in args.dataset:
-    #     plate_model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes, pretrained=args.pretrained,
-    #                                                           **kwargs)
-    #     plate_model.load_state_dict(torch.load(os.path.abspath("../../Desktop/weights/model_plate_25.pth")))
+    plate_model = None
+    if "Car" in args.dataset and args.visualize_only and args.visualize_plate:
+        plate_model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes, pretrained=args.pretrained,
+                                                              **kwargs)
+        plate_checkpoint = torch.load("../../Desktop/weights/model_plate_25.pth", map_location='cpu')
+        plate_model.load_state_dict(plate_checkpoint['model'])
 
     model.to(device)
     if args.distributed and args.sync_bn:
@@ -245,12 +255,16 @@ def main(args):
         return
 
     if args.visualize_only: # python train.py --resume model_25.pth --visualize-only
+        print("Visualize only", "-" * 20)
+        if args.visualize_plate: print("Visualize Plate", "-" * 20)
         model.eval()
         cpu_device = torch.device("cpu")
         
         threshold = 0.6
         skip_image_count = 0
         check_image_count = skip_image_count + 10
+        object_point = []
+
         # class_names = ("__background__", "aeroplane", "bicycle", "bird", "boat", "bottle", 
         # "bus", "car", "cat", "chair", "cow", 
         # "diningtable", "dog", "horse", "motorbike", "person", 
@@ -286,6 +300,9 @@ def main(args):
                     outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
 
                     for img, filename, output in zip(images, filenames, outputs):
+                        if args.visualize_plate: 
+                            tftp = transforms.ToPILImage()
+                            copy_img = tftp(img)
                         img = img.cpu().numpy().transpose(1, 2, 0).copy()
 
                         indexes = indexing_removal_with_iou(output)
@@ -295,6 +312,7 @@ def main(args):
                             if score < threshold: continue
                             if i in indexes: continue
                             point = point.type(torch.IntTensor).numpy()
+                            object_point.append(point)
                             # x, y / xmax, ymax
                             img = cv2.rectangle(img, (point[0], point[1]), (point[2], point[3]), (0, 0, 255), 2)
                             img = cv2.putText(img, class_names[label], (point[0] + 2, point[1] - 9), 0, 0.5, (0, 0, 255), 2)
@@ -304,6 +322,11 @@ def main(args):
                             cv2.imshow(f"red: prediction / threshold: {threshold} / {filename}", img)
                             cv2.waitKey()
                             cv2.destroyAllWindows()
+
+                        if args.visualize_plate and len(object_point) != 0:
+                            crop_imgs = get_crop_object_images(copy_img, object_point)
+                            crop_plate = show_plate_in_object(crop_imgs, device, get_transform(True, args.data_augmentation), 
+                                plate_model, threshold=0.4, show=True)
 
                         cnt += 1
                         if cnt == check_image_count:
@@ -323,14 +346,17 @@ def main(args):
 
                     for img, output, target in zip(images, outputs, targets):
                         img = img.cpu().numpy().transpose(1, 2, 0).copy() # cv2 = BGR, PIL RGB
+                        if args.visualize_plate: copy_img = img.copy()
                         # c, w, h -> w, h, c  / transpose axis -> 0, 1, 2 -> 1, 2, 0
 
                         indexes = indexing_removal_with_iou(output)
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
                         for i, (point, score, label) in enumerate(zip(output["boxes"], output["scores"], output["labels"])):
                             if score < threshold: continue
                             elif i in indexes: continue
                             point = point.type(torch.IntTensor).numpy()
+                            object_point.append(point)
                             # x, y / xmax, ymax
                             img = cv2.rectangle(img, (point[0], point[1]), (point[2], point[3]), (0, 0, 255), 2)
                             img = cv2.putText(img, class_names[label], (point[0] + 2, point[1] - 9), 0, 0.5, (0, 0, 255), 2)
@@ -345,6 +371,16 @@ def main(args):
                         cv2.imshow(f"red: prediction / green: label / threshold: {threshold} / {filename}", img)
                         cv2.waitKey()
                         cv2.destroyAllWindows()
+
+                        if args.visualize_plate:
+                            crop_imgs = get_crop_object_images(copy_img, object_point)
+                            crop_plate = show_plate_in_object(crop_imgs, device, get_transform(True, args.data_augmentation), 
+                                plate_model, threshold=threshold, show=True)
+
+                        # for c_img in crop_imgs:
+                        #     cv2.imshow("crop", c_img)
+                        #     cv2.waitKey()
+                        #     cv2.destroyAllWindows()
 
                         cnt += 1
                         if cnt == check_image_count:
