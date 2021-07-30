@@ -167,21 +167,22 @@ def get_car_image_path_split_list(img_folder, test_size=0.25, seed=0):
 def get_crop_object_images(img, boxes):
     crop_imgs = []
     for point in boxes:
-        crop_imgs.append(img.crop((point[0], point[1], point[2], point[3]))) # x, y, xmax, ymax
+        if point[2] - point[0] >= 100 and point[3] - point[1] >= 100: # 100 x 100
+            crop_imgs.append(img.crop((point[0], point[1], point[2], point[3]))) # x, y, xmax, ymax
 
     return crop_imgs
 
 def show_plate_in_object(imgs, device, transforms, model, threshold=0.6, show=True):
-    model.eval()
     crop_plate = []
     input_imgs = []
     # cpu_device = torch.device("cpu")
     if len(imgs) == 0: return None
+    import time
+
 
     for i in range(0, len(imgs)):
         # img = Image.fromarray(imgs[i]).convert("RGB")
         img, _ = transforms(imgs[i], None)
-        img.to(device)
         input_imgs.append(img)
     
     outputs = model(input_imgs)
@@ -189,7 +190,7 @@ def show_plate_in_object(imgs, device, transforms, model, threshold=0.6, show=Tr
 
     for img, output in zip(imgs, outputs):
         for point, score, label in zip(output["boxes"], output["scores"], output["labels"]):
-            if score < threshold: continue
+            if score < threshold: break
             point = point.type(torch.IntTensor).numpy()
             if show:
                 img = np.array(img)
@@ -200,5 +201,5 @@ def show_plate_in_object(imgs, device, transforms, model, threshold=0.6, show=Tr
                 cv2.waitKey()
                 cv2.destroyAllWindows()
             crop_plate.append(img[point[1]:point[3], point[0]:point[2]])
-
+            break
     return crop_plate

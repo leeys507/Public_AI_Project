@@ -209,7 +209,7 @@ def main(args):
     if "Car" in args.dataset and args.visualize_only and args.visualize_plate:
         plate_model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes, pretrained=args.pretrained,
                                                               **kwargs)
-        plate_checkpoint = torch.load("../../Desktop/weights/model_plate_25.pth", map_location='cpu')
+        plate_checkpoint = torch.load("../../Desktop/weights/model_plate_50.pth", map_location='cpu')
         plate_model.load_state_dict(plate_checkpoint['model'])
 
     model.to(device)
@@ -258,6 +258,7 @@ def main(args):
         print("Visualize only", "-" * 20)
         if args.visualize_plate: print("Visualize Plate", "-" * 20)
         model.eval()
+        plate_model.eval()
         cpu_device = torch.device("cpu")
         
         threshold = 0.6
@@ -326,7 +327,7 @@ def main(args):
                         if args.visualize_plate and len(object_point) != 0:
                             crop_imgs = get_crop_object_images(copy_img, object_point)
                             crop_plate = show_plate_in_object(crop_imgs, device, get_transform(True, args.data_augmentation), 
-                                plate_model, threshold=0.4, show=True)
+                               plate_model, threshold=0.4, show=True)
 
                         cnt += 1
                         if cnt == check_image_count:
