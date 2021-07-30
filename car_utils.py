@@ -175,18 +175,15 @@ def get_crop_object_images(img, boxes):
 def show_plate_in_object(imgs, device, transforms, model, threshold=0.6, show=True):
     crop_plate = []
     input_imgs = []
-    # cpu_device = torch.device("cpu")
+    cpu_device = torch.device("cpu")
     if len(imgs) == 0: return None
-    import time
-
 
     for i in range(0, len(imgs)):
-        # img = Image.fromarray(imgs[i]).convert("RGB")
         img, _ = transforms(imgs[i], None)
-        input_imgs.append(img)
+        input_imgs.append(img.to(device))
     
     outputs = model(input_imgs)
-    # outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
+    outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
 
     for img, output in zip(imgs, outputs):
         for point, score, label in zip(output["boxes"], output["scores"], output["labels"]):

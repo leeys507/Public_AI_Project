@@ -211,6 +211,7 @@ def main(args):
                                                               **kwargs)
         plate_checkpoint = torch.load("../../Desktop/weights/model_plate_50.pth", map_location='cpu')
         plate_model.load_state_dict(plate_checkpoint['model'])
+        plate_model.to(device)
 
     model.to(device)
     if args.distributed and args.sync_bn:
@@ -330,8 +331,9 @@ def main(args):
                                plate_model, threshold=0.4, show=True)
 
                         cnt += 1
+                        object_point.clear()
                         if cnt == check_image_count:
-                            exit()    
+                            exit()
             else:
                 for images, targets in data_loader_test:
                     images = list(img.to(device) for img in images)
