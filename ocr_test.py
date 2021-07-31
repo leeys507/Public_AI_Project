@@ -3,6 +3,7 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 import matplotlib.pyplot as plt
 import platform
+import numpy as np
 
 # font settings - for korean
 if platform.system() == 'Darwin': # MacOS
@@ -18,7 +19,9 @@ subscription_key = 'bb2cc1a868344e73a31aa6bbf88636b5'
 vision_base_url = 'https://ai4scattervision.cognitiveservices.azure.com/vision/v2.0/'
 ocr_url = vision_base_url + 'ocr'
 
-headers = {'Ocp-Apim-Subscription-Key': subscription_key}
+headers = {'Ocp-Apim-Subscription-Key': subscription_key,
+            "Content-Type": "application/octet-stream"
+    }
 params = {
     'language': 'ko',
     'detectOrientation': 'true'
@@ -34,40 +37,54 @@ image_urls = [
     'https://www.licenseplates.tv/images/intkore.gif'
 ]
 
+def get_text(imgs, image_format):
+    if imgs == None or len(imgs) == 0: return
+    for img in imgs:
+        if image_format.lower() == "jpg": img_format = "JPEG"
+        else: img_format = image_format
 
-for url in image_urls:
-    data = {'url': url}
-    response = requests.post(ocr_url, headers=headers, params=params, json=data)
-    result = response.json()
+        if img.width < 50:  # OCR API image larger than 50 x 50
+            img = img.resize((50, img.height))
+        if img.height < 50:
+            img = img.resize((img.width, 50))
+        
+        # data = {'url': url}
+        # img_data = open("C:/Users/me1/Desktop/ai_data/Car_Data/test/Capture.png", "rb").read()
+        img_data = img
 
-    if 'regions' in result:
-        line_infos = [region['lines'] for region in result['regions']]
-        print(line_infos)
-        word_infos = []
-        for line in line_infos:
-            for word_metadata in line:
-                for word_info in word_metadata['words']:
-                    word_infos.append(word_info)
+        img_byte_arr = BytesIO()
+        img_data.save(img_byte_arr, format=img_format)
+        img_byte_arr = img_byte_arr.getvalue()
 
-        plt.figure(figsize=(5, 5))
-        image = Image.open(BytesIO(requests.get(url).content))
+        response = requests.post(ocr_url, headers=headers, params=params, data=img_byte_arr)
+        result = response.json()
+        print(result)
 
-        ax = plt.imshow(image, alpha=0.5)
+        if 'regions' in result:
+            line_infos = [region['lines'] for region in result['regions']]
+            print(line_infos)
+            word_infos = []
+            for line in line_infos:
+                for word_metadata in line:
+                    for word_info in word_metadata['words']:
+                        word_infos.append(word_info)
 
-        for word in word_infos:
-            bbox = [int(num) for num in word["boundingBox"].split(",")]
-            text = word["text"]
-            origin = (bbox[0], bbox[1]) # 0: x, 1: y, 2: w, 3: h
-            patch = plt.Rectangle(origin, bbox[2], bbox[3], fill=False, linewidth=2, color='y')
-            ax.axes.add_patch(patch)
-            plt.text(origin[0], origin[1], text, fontsize=17, weight="bold", va="top")
+            plt.figure(figsize=(5, 5))
+            # image = Image.open(BytesIO(requests.get(url).content))
 
-        plt.axis("off")
-        plt.show()
-    else:
-        error_code = result['code']
-        print("OCR API Error --> ", error_code)
+            ax = plt.imshow(img, alpha=0.5)
 
+            for word in word_infos:
+                bbox = [int(num) for num in word["boundingBox"].split(",")]
+                text = word["text"]
+                # print(text) # concat
+                origin = (bbox[0], bbox[1]) # 0: x, 1: y, 2: w, 3: h
+                patch = plt.Rectangle(origin, bbox[2], bbox[3], fill=False, linewidth=2, color='y')
+                ax.axes.add_patch(patch)
+                plt.text(origin[0], origin[1], text, fontsize=17, weight="bold", va="top")
 
-
-
+            plt.axis("off")
+            plt.show()
+        else:
+            error_code = result['code']
+            print("OCR API Error --> ", error_code)

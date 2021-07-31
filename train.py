@@ -37,6 +37,7 @@ from car_utils import CarDetectionOnlyImage, get_Car, get_crop_object_images, sh
 
 from group_by_aspect_ratio import GroupedBatchSampler, create_aspect_ratio_groups
 from engine import train_one_epoch, coco_evaluate, voc_evaluate, ekdark_evaluate, car_evaluate
+import ocr_test
 
 import presets
 import utils
@@ -284,7 +285,7 @@ def main(args):
                 print("Create Validation Image Dataset Car")
                 images_valid_path = sorted(glob.glob(os.path.join(args.data_path, "Car_Data", "test", "*")))
                 dataset_valid = CarDetectionOnlyImage(img_folder=args.data_path, all_images_path=images_valid_path, 
-                    image_set="val", transforms=get_transform(True, args.data_augmentation))
+                    image_set="val")
                 
                 valid_sampler = torch.utils.data.SequentialSampler(dataset_valid)
                 data_loader_valid = torch.utils.data.DataLoader(
@@ -329,6 +330,8 @@ def main(args):
                             crop_imgs = get_crop_object_images(copy_img, object_point)
                             crop_plate = show_plate_in_object(crop_imgs, device, get_transform(True, args.data_augmentation), 
                                plate_model, threshold=0.4, show=True)
+                            if crop_plate != None and len(crop_plate) != 0:
+                                ocr_test.get_text(crop_plate, filename.split(".")[-1])
 
                         cnt += 1
                         object_point.clear()
@@ -348,8 +351,10 @@ def main(args):
                     # print(outputs, targets)
 
                     for img, output, target in zip(images, outputs, targets):
+                        if args.visualize_plate: 
+                            tftp = transforms.ToPILImage()
+                            copy_img = tftp(img)
                         img = img.cpu().numpy().transpose(1, 2, 0).copy() # cv2 = BGR, PIL RGB
-                        if args.visualize_plate: copy_img = img.copy()
                         # c, w, h -> w, h, c  / transpose axis -> 0, 1, 2 -> 1, 2, 0
 
                         indexes = indexing_removal_with_iou(output)
@@ -379,13 +384,11 @@ def main(args):
                             crop_imgs = get_crop_object_images(copy_img, object_point)
                             crop_plate = show_plate_in_object(crop_imgs, device, get_transform(True, args.data_augmentation), 
                                 plate_model, threshold=threshold, show=True)
-
-                        # for c_img in crop_imgs:
-                        #     cv2.imshow("crop", c_img)
-                        #     cv2.waitKey()
-                        #     cv2.destroyAllWindows()
+                            if crop_plate != None and len(crop_plate) != 0:
+                                ocr_test.get_text(crop_plate, filename.split(".")[-1])
 
                         cnt += 1
+                        object_point.clear()
                         if cnt == check_image_count:
                             exit()
         exit()

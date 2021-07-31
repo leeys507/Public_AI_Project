@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision
 from torchvision.datasets.vision import VisionDataset
+from torchvision.transforms.functional import crop
 import transforms as T
 import glob
 import os
@@ -84,16 +85,18 @@ class CarDetection(VisionDataset):
         return len(self.all_images_path)
 
 class CarDetectionOnlyImage(Dataset):
-    def __init__(self, img_folder, all_images_path, image_set, seed=0, transforms=None):
+    def __init__(self, img_folder, all_images_path, image_set, seed=0):
         print("-"*30+"\n","Car Detection Validation Only Image Init")
-        print(img_folder, image_set, transforms)
+        print(img_folder, image_set)
 
         random.seed(seed)
         random.shuffle(all_images_path)
         self.all_images_path = all_images_path
         self.root = img_folder
 
-        self._transforms = transforms
+        self._transforms = T.Compose([
+                T.ToTensor(),
+            ])
 
     def __getitem__(self, idx):
         data_path = self.all_images_path[idx]
@@ -167,8 +170,11 @@ def get_car_image_path_split_list(img_folder, test_size=0.25, seed=0):
 def get_crop_object_images(img, boxes):
     crop_imgs = []
     for point in boxes:
-        if point[2] - point[0] >= 100 and point[3] - point[1] >= 100: # 100 x 100
-            crop_imgs.append(img.crop((point[0], point[1], point[2], point[3]))) # x, y, xmax, ymax
+        if point[2] - point[0] >= 100 and point[3] - point[1] >= 100: # larger than100 x 100
+            if type(img) != np.ndarray: # PIL
+                crop_imgs.append(img.crop((point[0], point[1], point[2], point[3]))) # x, y, xmax, ymax
+            else:
+                crop_imgs.append(img[point[1]:point[3], point[0]:point[2]])
 
     return crop_imgs
 
@@ -187,16 +193,20 @@ def show_plate_in_object(imgs, device, transforms, model, threshold=0.6, show=Tr
 
     for img, output in zip(imgs, outputs):
         for point, score, label in zip(output["boxes"], output["scores"], output["labels"]):
-            if score < threshold: break
+            if score < threshold: continue # break
             point = point.type(torch.IntTensor).numpy()
             if show:
-                img = np.array(img)
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                img = cv2.rectangle(img, (point[0], point[1]), (point[2], point[3]), (0, 0, 255), 2)
-                img = cv2.putText(img, str(round(score.item(), 2)), (point[0] + 2, point[1] - 9), 0, 0.4, (255, 0, 0), 2)
-                cv2.imshow(f"plate in object / threshold: {threshold}", img)
+                if type(img) != np.ndarray:
+                    c_img = np.array(img)
+                c_img = cv2.cvtColor(c_img, cv2.COLOR_RGB2BGR)
+                c_img = cv2.rectangle(c_img, (point[0], point[1]), (point[2], point[3]), (0, 0, 255), 2)
+                c_img = cv2.putText(c_img, str(round(score.item(), 2)), (point[0] + 2, point[1] - 9), 0, 0.4, (255, 0, 0), 2)
+                cv2.imshow(f"plate in object / threshold: {threshold}", c_img)
                 cv2.waitKey()
                 cv2.destroyAllWindows()
-            crop_plate.append(img[point[1]:point[3], point[0]:point[2]]) # ymin:ymax, xmin:xmax
-            break
+            if type(img) != np.ndarray: # PIL
+                crop_plate.append(img.crop((point[0], point[1], point[2], point[3])))
+            else:
+                crop_plate.append(img[point[1]:point[3], point[0]:point[2]]) # ymin:ymax, xmin:xmax
+            # break
     return crop_plate
