@@ -222,7 +222,7 @@ def main(args):
     if "Car" in args.dataset and args.visualize_only and args.visualize_plate:
         plate_model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes, pretrained=args.pretrained,
                                                               **kwargs)
-        plate_checkpoint = torch.load("../../Desktop/weights/model_plate_50.pth", map_location='cpu')
+        plate_checkpoint = torch.load("../../Desktop/weights/model_plate_60.pth", map_location='cpu')
         plate_model.load_state_dict(plate_checkpoint['model'])
         plate_model.to(device)
 
