@@ -274,7 +274,7 @@ def main(args):
         print("Visualize Only", "-" * 20)
         if args.visualize_plate: print("Visualize Plate", "-" * 20)
         model.eval()
-        plate_model.eval()
+        if args.visualize_plate: plate_model.eval()
         cpu_device = torch.device("cpu")
         
         threshold = 0.6
@@ -299,7 +299,7 @@ def main(args):
                 print("Create Validation Image Dataset Car")
                 images_valid_path = sorted(glob.glob(os.path.join(args.data_path, "Car_Data", "test", "*")))
                 dataset_valid = CarDetectionOnlyImage(img_folder=args.data_path, all_images_path=images_valid_path, 
-                    image_set="val")
+                    image_set="val", seed=0)
                 
                 valid_sampler = torch.utils.data.SequentialSampler(dataset_valid)
                 data_loader_valid = torch.utils.data.DataLoader(
@@ -388,10 +388,11 @@ def main(args):
                             img = cv2.rectangle(img, (point[0], point[1]), (point[2], point[3]), (0, 255, 0), 2)
                             img = cv2.putText(img, class_names[label], (point[0] + 2, point[1] - 11), 0, 0.5, (0, 255, 0), 2)
 
-                        filename = ''.join([chr(i) for i in target['name'].tolist()])
-                        cv2.imshow(f"red: prediction / green: label / threshold: {threshold} / {filename}", img)
-                        cv2.waitKey()
-                        cv2.destroyAllWindows()
+                        if skip_image_count <= cnt:
+                            filename = ''.join([chr(i) for i in target['name'].tolist()])
+                            cv2.imshow(f"red: prediction / green: label / threshold: {threshold} / {filename}", img)
+                            cv2.waitKey()
+                            cv2.destroyAllWindows()
 
                         if args.visualize_plate:
                             crop_imgs = get_crop_object_images(copy_img, object_point)
