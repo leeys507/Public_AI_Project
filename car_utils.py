@@ -114,7 +114,7 @@ class CarDetectionOnlyImage(Dataset):
         return len(self.all_images_path)
 
 # get car dataset
-def get_Car(root, image_set, transforms):
+def get_Car(root, image_set, transforms, data_folder="train", annotation_folder="annotation", test_size=0.25):
     t = [ConvertCartoCOCO()]
     print(t)
     if transforms is not None:
@@ -123,7 +123,7 @@ def get_Car(root, image_set, transforms):
 
     print("Split Car Data")
     images_train_path, images_test_path, labels_train_path, labels_test_path = \
-        get_car_image_path_split_list(img_folder=root, test_size=0.2)
+        get_car_image_path_split_list(root, data_folder, annotation_folder, test_size)
 
     print("train data count:", len(images_train_path), "/ test data count:", len(images_test_path))
 
@@ -141,9 +141,10 @@ def get_Car(root, image_set, transforms):
     return dataset
 
 # car data split
-def get_car_image_path_split_list(img_folder, test_size=0.25, seed=0):
-    all_images_path = sorted(glob.glob(os.path.join(img_folder, "Car_Data", "train", "*")))
-    all_labels_path = sorted(glob.glob(os.path.join(img_folder, "Car_Data", "annotation", "*")))
+def get_car_image_path_split_list(img_folder, data_folder="train", 
+        annotation_folder="annotation", test_size=0.25, seed=0):
+    all_images_path = sorted(glob.glob(os.path.join(img_folder, "Car_Data", data_folder, "*")))
+    all_labels_path = sorted(glob.glob(os.path.join(img_folder, "Car_Data", annotation_folder, "*")))
 
     if len(all_images_path) != len(all_labels_path):
         raise Exception("Split Data Failed")

@@ -46,7 +46,7 @@ import glob
 from PIL import Image
 from iou import *
 
-def get_dataset(name, image_set, transform, data_path, download=False):
+def get_dataset(name, image_set, transform, data_path, split_data=True, download=False):
     paths = {
         "coco": (data_path, get_coco, 91),
         "coco_kp": (data_path, get_coco_kp, 2),
@@ -59,6 +59,17 @@ def get_dataset(name, image_set, transform, data_path, download=False):
     if name == "voc":
         # 데이터셋 다운로드를 위함
         ds = ds_fn(p, image_set=image_set, transforms=transform, download=download)
+    elif name == "Car":
+        if split_data==True:
+            ds = ds_fn(p, image_set=image_set, transforms=transform, 
+                data_folder="train", annotation_folder="annotation", test_size=0.2)
+        else:
+            if image_set == "train":
+                ds = ds_fn(p, image_set=image_set, transforms=transform, 
+                    data_folder="train", annotation_folder="annotation", test_size=0)
+            else:
+                ds = ds_fn(p, image_set=image_set, transforms=transform, 
+                    data_folder="test", annotation_folder="test_annotation", test_size=1)
     else:
         ds = ds_fn(p, image_set=image_set, transforms=transform)
     return ds, num_classes
@@ -165,12 +176,13 @@ def main(args):
 
     # Data loading code
     print("Loading data")
+    split_data = True # train folder 데이터를 train, test로 나눔
     
     # voc만 download 지원 (coco는 다운로드 불가)
     dataset, num_classes = get_dataset(args.dataset, "train", get_transform(True, args.data_augmentation),
-                                       args.data_path, download=False)
-    dataset_test, _ = get_dataset(args.dataset, "val", get_transform(False, args.data_augmentation),
-                                  args.data_path, download=False)
+                                       args.data_path, split_data=split_data, download=False)
+    dataset_test, _ = get_dataset(args.dataset, "test", get_transform(False, args.data_augmentation),
+                                  args.data_path, split_data=split_data, download=False)
 
     print("Creating data loaders")
     if args.distributed:
@@ -246,18 +258,20 @@ def main(args):
         args.start_epoch = checkpoint['epoch'] + 1
 
     if args.test_only:
-        if 'coco' in args.dataset:
-            coco_evaluate(model, data_loader_test, device=device)
-        elif 'voc' in args.dataset:
-            voc_evaluate(model, data_loader_test, device=device)
-        elif 'ExDark' in args.dataset:
-            ekdark_evaluate(model, data_loader_test, device=device)
-        elif "Car" in args.dataset:
-            car_evaluate(model, data_loader_test, device=device)
+        print("Test Only", "-" * 20)
+        if len(dataset_test) != 0:
+            if 'coco' in args.dataset:
+                coco_evaluate(model, data_loader_test, device=device)
+            elif 'voc' in args.dataset:
+                voc_evaluate(model, data_loader_test, device=device)
+            elif 'ExDark' in args.dataset:
+                ekdark_evaluate(model, data_loader_test, device=device)
+            elif "Car" in args.dataset:
+                car_evaluate(model, data_loader_test, device=device)
         return
 
     if args.visualize_only: # python train.py --resume model_25.pth --visualize-only
-        print("Visualize only", "-" * 20)
+        print("Visualize Only", "-" * 20)
         if args.visualize_plate: print("Visualize Plate", "-" * 20)
         model.eval()
         plate_model.eval()
