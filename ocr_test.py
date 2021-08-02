@@ -74,11 +74,12 @@ def get_text(imgs, image_format):
 
             ax = plt.imshow(img, alpha=0.5)
 
-            text = ""
+            print_text = ""
             for word in word_infos:
                 bbox = [int(num) for num in word["boundingBox"].split(",")]
-                if text != "": text += " "
-                text += word["text"]
+                if print_text != "": print_text += " "
+                print_text += word["text"]
+                text = word["text"]
                 # print(text) # concat
                 origin = (bbox[0], bbox[1]) # 0: x, 1: y, 2: w, 3: h
                 patch = plt.Rectangle(origin, bbox[2], bbox[3], fill=False, linewidth=2, color='y')

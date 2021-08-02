@@ -171,7 +171,7 @@ def get_car_image_path_split_list(img_folder, data_folder="train",
 def get_crop_object_images(img, boxes):
     crop_imgs = []
     for point in boxes:
-        if point[2] - point[0] >= 100 and point[3] - point[1] >= 100: # larger than100 x 100
+        if point[2] - point[0] >= 100 and point[3] - point[1] >= 100: # larger than 100 x 100
             if type(img) != np.ndarray: # PIL
                 crop_imgs.append(img.crop((point[0], point[1], point[2], point[3]))) # x, y, xmax, ymax
             else:
@@ -179,9 +179,12 @@ def get_crop_object_images(img, boxes):
 
     return crop_imgs
 
-def show_plate_in_object(imgs, device, transforms, model, threshold=0.6, show=True):
+def show_plate_in_object(imgs, device, model, threshold=0.6, show=True):
     crop_plate = []
     input_imgs = []
+    transforms = T.Compose([
+                T.ToTensor(),
+            ])
     cpu_device = torch.device("cpu")
     if len(imgs) == 0: return None
 

@@ -342,8 +342,7 @@ def main(args):
 
                         if args.visualize_plate and len(object_point) != 0:
                             crop_imgs = get_crop_object_images(copy_img, object_point)
-                            crop_plate = show_plate_in_object(crop_imgs, device, get_transform(True, args.data_augmentation), 
-                               plate_model, threshold=0.4, show=True)
+                            crop_plate = show_plate_in_object(crop_imgs, device, plate_model, threshold=0.4, show=True)
                             if crop_plate != None and len(crop_plate) != 0:
                                 ocr_test.get_text(crop_plate, filename.split(".")[-1])
 
@@ -396,8 +395,7 @@ def main(args):
 
                         if args.visualize_plate:
                             crop_imgs = get_crop_object_images(copy_img, object_point)
-                            crop_plate = show_plate_in_object(crop_imgs, device, get_transform(True, args.data_augmentation), 
-                                plate_model, threshold=threshold, show=True)
+                            crop_plate = show_plate_in_object(crop_imgs, device, plate_model, threshold=threshold, show=True)
                             if crop_plate != None and len(crop_plate) != 0:
                                 ocr_test.get_text(crop_plate, filename.split(".")[-1])
 
