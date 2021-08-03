@@ -168,10 +168,10 @@ def get_car_image_path_split_list(img_folder, data_folder="train",
 
     return x_train, x_test, y_train, y_test
 
-def get_crop_object_images(img, boxes):
+def get_crop_object_images(img, boxes, min_width=100, min_height=100):
     crop_imgs = []
     for point in boxes:
-        if point[2] - point[0] >= 100 and point[3] - point[1] >= 100: # larger than 100 x 100
+        if point[2] - point[0] >= min_width and point[3] - point[1] >= min_height: # larger than 100 x 100
             if type(img) != np.ndarray: # PIL
                 crop_imgs.append(img.crop((point[0], point[1], point[2], point[3]))) # x, y, xmax, ymax
             else:

@@ -4,6 +4,8 @@ from PIL import Image, ImageDraw, ImageFont
 import matplotlib.pyplot as plt
 import platform
 import numpy as np
+import uuid
+import datetime
 
 # font settings - for korean
 if platform.system() == 'Darwin': # MacOS
@@ -37,7 +39,7 @@ image_urls = [
     'https://www.licenseplates.tv/images/intkore.gif'
 ]
 
-def get_text(imgs, image_format):
+def get_text(imgs, image_format, img_save_path="."):
     if imgs == None or len(imgs) == 0: return
     for img in imgs:
         if image_format.lower() == "jpg": img_format = "JPEG"
@@ -86,6 +88,11 @@ def get_text(imgs, image_format):
                 ax.axes.add_patch(patch)
                 plt.text(origin[0], origin[1], text, fontsize=17, weight="bold", va="top")
 
+            time_now = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+            if print_text != "":
+                plt.savefig(img_save_path + "/" + print_text + "-" + time_now + "." + img_format)
+            else:
+                plt.savefig(img_save_path + "/" + time_now + "-" + str(uuid.uuid4()) + "." + img_format)
             plt.axis("off")
             plt.show()
         else:

@@ -282,6 +282,11 @@ def main(args):
         check_image_count = skip_image_count + 10
         object_point = []
 
+        if args.visualize_plate:
+            license_img_save_path = os.path.abspath("../../Desktop/ai_data/Car_Data/license_in_object")
+            if not os.path.isdir(license_img_save_path):                                                           
+                os.mkdir(license_img_save_path)
+
         # class_names = ("__background__", "aeroplane", "bicycle", "bird", "boat", "bottle", 
         # "bus", "car", "cat", "chair", "cow", 
         # "diningtable", "dog", "horse", "motorbike", "person", 
@@ -344,7 +349,7 @@ def main(args):
                             crop_imgs = get_crop_object_images(copy_img, object_point)
                             crop_plate = show_plate_in_object(crop_imgs, device, plate_model, threshold=0.4, show=True)
                             if crop_plate != None and len(crop_plate) != 0:
-                                ocr_test.get_text(crop_plate, filename.split(".")[-1])
+                                ocr_test.get_text(crop_plate, filename.split(".")[-1], license_img_save_path)
 
                         cnt += 1
                         object_point.clear()
@@ -398,7 +403,7 @@ def main(args):
                             crop_imgs = get_crop_object_images(copy_img, object_point)
                             crop_plate = show_plate_in_object(crop_imgs, device, plate_model, threshold=threshold, show=True)
                             if crop_plate != None and len(crop_plate) != 0:
-                                ocr_test.get_text(crop_plate, filename.split(".")[-1])
+                                ocr_test.get_text(crop_plate, filename.split(".")[-1], license_img_save_path)
 
                         cnt += 1
                         object_point.clear()
