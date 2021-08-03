@@ -14,8 +14,6 @@ elif platform.system() == 'Windows': # Windows
         plt.rc('font', family='Malgun Gothic')
 plt.rcParams['axes.unicode_minus'] = False
 
-
-
 # setting api parameters
 subscription_key = 'bb2cc1a868344e73a31aa6bbf88636b5'
 vision_base_url = 'https://ai4scattervision.cognitiveservices.azure.com/vision/v2.0/'
@@ -28,9 +26,6 @@ params = {
     'language': 'ko',
     'detectOrientation': 'true'
 }
-
-
-
 
 # test image links array
 image_urls = [
@@ -60,7 +55,7 @@ def get_text(imgs, image_format, img_save_path="."):
 
         response = requests.post(ocr_url, headers=headers, params=params, data=img_byte_arr)
         result = response.json()
-        print(result)
+        # print(result)
 
         if 'regions' in result:
             line_infos = [region['lines'] for region in result['regions']]
@@ -95,6 +90,8 @@ def get_text(imgs, image_format, img_save_path="."):
                 plt.savefig(img_save_path + "/" + time_now + "-" + str(uuid.uuid4()) + "." + img_format)
             plt.axis("off")
             plt.show()
+            return print_text
         else:
             error_code = result['code']
             print("OCR API Error --> ", error_code)
+            return ""
