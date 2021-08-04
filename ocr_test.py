@@ -16,7 +16,7 @@ plt.rcParams['axes.unicode_minus'] = False
 
 # setting api parameters
 subscription_key = 'bb2cc1a868344e73a31aa6bbf88636b5'
-vision_base_url = 'https://ai4scattervision.cognitiveservices.azure.com/vision/v2.0/'
+vision_base_url = 'https://ai4scattervision.cognitiveservices.azure.com/vision/v3.2/'
 ocr_url = vision_base_url + 'ocr'
 
 headers = {'Ocp-Apim-Subscription-Key': subscription_key,
@@ -85,6 +85,10 @@ def get_text(imgs, image_format, img_save_path="."):
 
             time_now = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
             if print_text != "":
+                bad_char = '\/:*?"<>|'
+                for c in bad_char:
+                    if c in print_text:
+                        print_text = print_text.replace(c, "")
                 plt.savefig(img_save_path + "/" + print_text + "-" + time_now + "." + img_format)
             else:
                 plt.savefig(img_save_path + "/" + time_now + "-" + str(uuid.uuid4()) + "." + img_format)
