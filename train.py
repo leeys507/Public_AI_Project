@@ -29,14 +29,10 @@ import torchvision.models.detection
 import torchvision.models.detection.mask_rcnn
 from torchvision.transforms import transforms
 # import torchvision.datasets.voc
-
-from coco_utils import get_coco, get_coco_kp
-from voc_utils import get_voc
-from exdark_utils import get_ExDark
 from car_utils import CarDetectionOnlyImage, get_Car, get_crop_object_images, show_plate_in_object
 
 from group_by_aspect_ratio import GroupedBatchSampler, create_aspect_ratio_groups
-from engine import train_one_epoch, coco_evaluate, voc_evaluate, ekdark_evaluate, car_evaluate
+from engine import train_one_epoch, car_evaluate
 import ocr_test
 
 import presets
@@ -46,20 +42,12 @@ import glob
 from PIL import Image
 from iou import *
 
-def get_dataset(name, image_set, transform, data_path, split_data=True, download=False):
+def get_dataset(name, image_set, transform, data_path, split_data=True):
     paths = {
-        "coco": (data_path, get_coco, 91),
-        "coco_kp": (data_path, get_coco_kp, 2),
-        "voc": (data_path, get_voc, 21),
-        "ExDark": (data_path, get_ExDark, 13),
         "Car": (data_path, get_Car, 6)
     }
     p, ds_fn, num_classes = paths[name]
-
-    if name == "voc":
-        # 데이터셋 다운로드를 위함
-        ds = ds_fn(p, image_set=image_set, transforms=transform, download=download)
-    elif name == "Car":
+    if name == "Car":
         if split_data==True:
             ds = ds_fn(p, image_set=image_set, transforms=transform, 
                 data_folder="train", annotation_folder="annotation", test_size=0.2)
@@ -188,9 +176,9 @@ def main(args):
     
     # voc만 download 지원 (coco는 다운로드 불가)
     dataset, num_classes = get_dataset(args.dataset, "train", get_transform(True, args.data_augmentation),
-                                       args.data_path, split_data=split_data, download=False)
+                                       args.data_path, split_data=split_data)
     dataset_test, _ = get_dataset(args.dataset, "test", get_transform(False, args.data_augmentation),
-                                  args.data_path, split_data=split_data, download=False)
+                                  args.data_path, split_data=split_data)
 
     print("Creating data loaders")
     if args.distributed:
@@ -268,13 +256,7 @@ def main(args):
     if args.test_only:
         print("Test Only", "-" * 20)
         if len(dataset_test) != 0:
-            if 'coco' in args.dataset:
-                coco_evaluate(model, data_loader_test, device=device)
-            elif 'voc' in args.dataset:
-                voc_evaluate(model, data_loader_test, device=device)
-            elif 'ExDark' in args.dataset:
-                ekdark_evaluate(model, data_loader_test, device=device)
-            elif "Car" in args.dataset:
+            if "Car" in args.dataset:
                 car_evaluate(model, data_loader_test, device=device)
         return
 
@@ -442,13 +424,7 @@ def main(args):
                 os.path.join(args.output_dir, '%s.pth' % save_checkpoint_pth_name))
 
         # evaluate after every epoch
-        if 'coco' in args.dataset:
-            coco_evaluate(model, data_loader_test, device=device)
-        elif 'voc' in args.dataset:
-            voc_evaluate(model, data_loader_test, device=device)
-        elif 'ExDark' in args.dataset:
-            ekdark_evaluate(model, data_loader_test, device=device)
-        elif "Car" in args.dataset:
+        if "Car" in args.dataset:
             if len(dataset_test) != 0:
                 car_evaluate(model, data_loader_test, device=device)
 
