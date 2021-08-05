@@ -117,6 +117,8 @@ def get_args_parser(add_help=True):
     parser.add_argument('--trainable-backbone-layers', default=3, type=int,
                         help='number of trainable layers of backbone')
     parser.add_argument('--data-augmentation', default="hflip", help='data augmentation policy (default: hflip)')
+    parser.add_argument('--show-image-count', default=[10, 0], nargs='+', type=int,
+                        help='number of show image count and number of skip image count') # default 16, 22 modify
     parser.add_argument(
         "--sync-bn",
         dest="sync_bn",
@@ -153,6 +155,12 @@ def get_args_parser(add_help=True):
         help="visualize plate image",
         action="store_true",
     )
+    parser.add_argument(
+        "--split-data",
+        dest="split_data",
+        help="train/annotation split train, test datasets",
+        action="store_true",
+    )
 
     # distributed training parameters
     parser.add_argument('--world-size', default=1, type=int,
@@ -176,7 +184,7 @@ def main(args):
 
     # Data loading code
     print("Loading data")
-    split_data = True # train folder 데이터를 train, test로 나눔
+    split_data = args.split_data # train folder 데이터를 train, test로 나눔
     
     # voc만 download 지원 (coco는 다운로드 불가)
     dataset, num_classes = get_dataset(args.dataset, "train", get_transform(True, args.data_augmentation),
@@ -278,8 +286,8 @@ def main(args):
         cpu_device = torch.device("cpu")
         
         threshold = 0.6
-        skip_image_count = 0
-        check_image_count = skip_image_count + 10
+        skip_image_count = args.show_image_count[1]
+        check_image_count = skip_image_count + args.show_image_count[0]
         object_point = []
 
         if args.visualize_plate:
@@ -302,7 +310,7 @@ def main(args):
         with torch.no_grad():
             if args.valid_only_img:
                 print("Create Validation Image Dataset Car")
-                images_valid_path = sorted(glob.glob(os.path.join(args.data_path, "Car_Data", "test", "*")))
+                images_valid_path = sorted(glob.glob(os.path.join(args.data_path, "Car_Data", "valid", "*")))
                 dataset_valid = CarDetectionOnlyImage(img_folder=args.data_path, all_images_path=images_valid_path, 
                     image_set="val", seed=0)
                 
