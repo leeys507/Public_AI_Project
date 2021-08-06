@@ -172,37 +172,42 @@ def main(args):
 
     # Data loading code
     print("Loading data")
-    split_data = args.split_data # train folder 데이터를 train, test로 나눔
-    
-    # voc만 download 지원 (coco는 다운로드 불가)
-    dataset, num_classes = get_dataset(args.dataset, "train", get_transform(True, args.data_augmentation),
-                                       args.data_path, split_data=split_data)
-    dataset_test, _ = get_dataset(args.dataset, "test", get_transform(False, args.data_augmentation),
-                                  args.data_path, split_data=split_data)
 
-    print("Creating data loaders")
-    if args.distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(dataset)
-        test_sampler = torch.utils.data.distributed.DistributedSampler(dataset_test)
-    else:
-        train_sampler = torch.utils.data.RandomSampler(dataset)
-        test_sampler = torch.utils.data.SequentialSampler(dataset_test)
+    dataset_class_num = {"Car":6, }
+    num_classes = dataset_class_num[args.dataset]
 
-    if args.aspect_ratio_group_factor >= 0:
-        group_ids = create_aspect_ratio_groups(dataset, k=args.aspect_ratio_group_factor)
-        train_batch_sampler = GroupedBatchSampler(train_sampler, group_ids, args.batch_size)
-    else:
-        train_batch_sampler = torch.utils.data.BatchSampler(
-            train_sampler, args.batch_size, drop_last=True)
+    if not args.valid_only_img:
+        split_data = args.split_data # train folder 데이터를 train, test로 나눔
+        
+        # voc만 download 지원 (coco는 다운로드 불가)
+        dataset, num_classes = get_dataset(args.dataset, "train", get_transform(True, args.data_augmentation),
+                                        args.data_path, split_data=split_data)
+        dataset_test, _ = get_dataset(args.dataset, "test", get_transform(False, args.data_augmentation),
+                                    args.data_path, split_data=split_data)
 
-    data_loader = torch.utils.data.DataLoader(
-        dataset, batch_sampler=train_batch_sampler, num_workers=args.workers,
-        collate_fn=utils.collate_fn)
+        print("Creating data loaders")
+        if args.distributed:
+            train_sampler = torch.utils.data.distributed.DistributedSampler(dataset)
+            test_sampler = torch.utils.data.distributed.DistributedSampler(dataset_test)
+        else:
+            train_sampler = torch.utils.data.RandomSampler(dataset)
+            test_sampler = torch.utils.data.SequentialSampler(dataset_test)
 
-    data_loader_test = torch.utils.data.DataLoader(
-        dataset_test, batch_size=1,
-        sampler=test_sampler, num_workers=args.workers,
-        collate_fn=utils.collate_fn)
+        if args.aspect_ratio_group_factor >= 0:
+            group_ids = create_aspect_ratio_groups(dataset, k=args.aspect_ratio_group_factor)
+            train_batch_sampler = GroupedBatchSampler(train_sampler, group_ids, args.batch_size)
+        else:
+            train_batch_sampler = torch.utils.data.BatchSampler(
+                train_sampler, args.batch_size, drop_last=True)
+
+        data_loader = torch.utils.data.DataLoader(
+            dataset, batch_sampler=train_batch_sampler, num_workers=args.workers,
+            collate_fn=utils.collate_fn)
+
+        data_loader_test = torch.utils.data.DataLoader(
+            dataset_test, batch_size=1,
+            sampler=test_sampler, num_workers=args.workers,
+            collate_fn=utils.collate_fn)
 
     print("Creating model")
     kwargs = {
@@ -335,11 +340,11 @@ def main(args):
                             cv2.waitKey()
                             cv2.destroyAllWindows()
 
-                        if args.visualize_plate and len(object_point) != 0:
-                            crop_imgs = get_crop_object_images(copy_img, object_point)
-                            crop_plate = show_plate_in_object(crop_imgs, device, plate_model, threshold=0.4, show=True)
-                            if crop_plate != None and len(crop_plate) != 0:
-                                ocr_test.get_text(crop_plate, filename.split(".")[-1], license_img_save_path)
+                            if args.visualize_plate and len(object_point) != 0:
+                                crop_imgs = get_crop_object_images(copy_img, object_point)
+                                crop_plate = show_plate_in_object(crop_imgs, device, plate_model, threshold=threshold, show=True)
+                                if crop_plate != None and len(crop_plate) != 0:
+                                    ocr_test.get_text(crop_plate, filename.split(".")[-1], license_img_save_path)
 
                         cnt += 1
                         object_point.clear()
@@ -389,11 +394,11 @@ def main(args):
                             cv2.waitKey()
                             cv2.destroyAllWindows()
 
-                        if args.visualize_plate:
-                            crop_imgs = get_crop_object_images(copy_img, object_point)
-                            crop_plate = show_plate_in_object(crop_imgs, device, plate_model, threshold=threshold, show=True)
-                            if crop_plate != None and len(crop_plate) != 0:
-                                ocr_test.get_text(crop_plate, filename.split(".")[-1], license_img_save_path)
+                            if args.visualize_plate:
+                                crop_imgs = get_crop_object_images(copy_img, object_point)
+                                crop_plate = show_plate_in_object(crop_imgs, device, plate_model, threshold=threshold, show=True)
+                                if crop_plate != None and len(crop_plate) != 0:
+                                    ocr_test.get_text(crop_plate, filename.split(".")[-1], license_img_save_path)
 
                         cnt += 1
                         object_point.clear()

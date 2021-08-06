@@ -34,19 +34,34 @@ image_urls = [
     'https://www.licenseplates.tv/images/intkore.gif'
 ]
 
+def add_padding(pil_img, top, bottom, left, right, color):
+    width, height = pil_img.size
+    new_width = width + right + left
+    new_height = height + top + bottom
+    result = Image.new(pil_img.mode, (new_width, new_height), color)
+    result.paste(pil_img, (left, top))
+    return result
+
 def get_text(imgs, image_format, img_save_path="."):
     if imgs == None or len(imgs) == 0: return
+
+    color = (0, 0, 0)
+    print_text_list = []
     for img in imgs:
         if image_format.lower() == "jpg": img_format = "JPEG"
         else: img_format = image_format
 
         if img.width < 50:  # OCR API image larger than 50 x 50
-            img = img.resize((50, img.height))
+            padding = int((50 - img.width) / 2)
+            if not (img.width % 2 == 0):
+                padding += 1
+            img = add_padding(img, 0, 0, padding, padding, color) # img.resize((50, img.height))
         if img.height < 50:
-            img = img.resize((img.width, 50))
-        
-        # data = {'url': url}
-        # img_data = open("C:/Users/me1/Desktop/ai_data/Car_Data/test/Capture.png", "rb").read()
+            padding = int((50 - img.height) / 2)
+            if not (img.height % 2 == 0):
+                padding += 1
+            img = add_padding(img, padding, padding, 0, 0, color) # img.resize((img.width, 50))
+
         img_data = img
 
         img_byte_arr = BytesIO()
@@ -90,12 +105,17 @@ def get_text(imgs, image_format, img_save_path="."):
                     if c in print_text:
                         print_text = print_text.replace(c, "")
                 plt.savefig(img_save_path + "/" + print_text + "-" + time_now + "." + img_format)
+                print_text_list.append(print_text)
             else:
                 plt.savefig(img_save_path + "/" + time_now + "-" + str(uuid.uuid4()) + "." + img_format)
             plt.axis("off")
-            plt.show()
-            return print_text
+            plt.draw()
+            plt.waitforbuttonpress(0)
+            plt.close()
+
         else:
             error_code = result['code']
             print("OCR API Error --> ", error_code)
             return ""
+    
+    return print_text_list

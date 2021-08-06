@@ -197,7 +197,7 @@ def show_plate_in_object(imgs, device, model, threshold=0.6, show=True):
 
     for img, output in zip(imgs, outputs):
         for point, score, label in zip(output["boxes"], output["scores"], output["labels"]):
-            if score < threshold: continue # break
+            if score < threshold: continue
             point = point.type(torch.IntTensor).numpy()
             if show:
                 if type(img) != np.ndarray:
@@ -212,5 +212,5 @@ def show_plate_in_object(imgs, device, model, threshold=0.6, show=True):
                 crop_plate.append(img.crop((point[0], point[1], point[2], point[3])))
             else:
                 crop_plate.append(img[point[1]:point[3], point[0]:point[2]]) # ymin:ymax, xmin:xmax
-            # break
+            break # top score plate
     return crop_plate
