@@ -42,22 +42,29 @@ import glob
 from PIL import Image
 from iou import *
 
-def get_dataset(name, image_set, transform, data_path, split_data=True):
+def get_dataset(name, image_set, transform, data_path, split_data=True, test_plate=False):
     paths = {
         "Car": (data_path, get_Car, 6)
     }
+
     p, ds_fn, num_classes = paths[name]
     if name == "Car":
         if split_data==True:
-            ds = ds_fn(p, image_set=image_set, transforms=transform, 
+            ds = ds_fn(p, image_set=image_set, transforms=transform, test_plate=test_plate,
                 data_folder="train", annotation_folder="annotation", test_size=0.2)
         else:
             if image_set == "train":
-                ds = ds_fn(p, image_set=image_set, transforms=transform, 
+                ds = ds_fn(p, image_set=image_set, transforms=transform, test_plate=test_plate,
                     data_folder="train", annotation_folder="annotation", test_size=0)
             else:
-                ds = ds_fn(p, image_set=image_set, transforms=transform, 
-                    data_folder="test", annotation_folder="test_annotation", test_size=1)
+                test_data_folder = "test"
+                test_annotation_folder = "test_annotation"
+
+                if test_plate:
+                    test_annotation_folder = "test_annotation_license"
+
+                ds = ds_fn(p, image_set=image_set, transforms=transform, test_plate=test_plate,
+                    data_folder=test_data_folder, annotation_folder=test_annotation_folder, test_size=1)
     else:
         ds = ds_fn(p, image_set=image_set, transforms=transform)
     return ds, num_classes
@@ -149,6 +156,12 @@ def get_args_parser(add_help=True):
         help="train/annotation split train, test datasets",
         action="store_true",
     )
+    parser.add_argument(
+        "--test-plate",
+        dest="test_plate",
+        help="test plate model",
+        action="store_true",
+    )
 
     # distributed training parameters
     parser.add_argument('--world-size', default=1, type=int,
@@ -173,7 +186,7 @@ def main(args):
     # Data loading code
     print("Loading data")
 
-    dataset_class_num = {"Car":6, }
+    dataset_class_num = {"Car": 6, }
     num_classes = dataset_class_num[args.dataset]
 
     if not args.valid_only_img:
@@ -181,9 +194,9 @@ def main(args):
         
         # voc만 download 지원 (coco는 다운로드 불가)
         dataset, num_classes = get_dataset(args.dataset, "train", get_transform(True, args.data_augmentation),
-                                        args.data_path, split_data=split_data)
+                                        args.data_path, split_data=split_data, test_plate=args.test_plate)
         dataset_test, _ = get_dataset(args.dataset, "test", get_transform(False, args.data_augmentation),
-                                    args.data_path, split_data=split_data)
+                                    args.data_path, split_data=split_data, test_plate=args.test_plate)
 
         print("Creating data loaders")
         if args.distributed:
@@ -213,6 +226,7 @@ def main(args):
     kwargs = {
         "trainable_backbone_layers": args.trainable_backbone_layers
     }
+
     if "rcnn" in args.model:
         if args.rpn_score_thresh is not None:
             kwargs["rpn_score_thresh"] = args.rpn_score_thresh
@@ -220,7 +234,8 @@ def main(args):
                                                               **kwargs)
     # plate model load
     plate_model = None
-    if "Car" in args.dataset and args.visualize_only and args.visualize_plate:
+    if ("Car" in args.dataset and (args.visualize_only and args.visualize_plate)) or + \
+        ("Car" in args.dataset and args.test_plate):
         plate_model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes, pretrained=args.pretrained,
                                                               **kwargs)
         plate_checkpoint = torch.load("../../Desktop/weights/model_plate_60.pth", map_location='cpu')
@@ -262,7 +277,10 @@ def main(args):
         print("Test Only", "-" * 20)
         if len(dataset_test) != 0:
             if "Car" in args.dataset:
-                car_evaluate(model, data_loader_test, device=device)
+                if args.test_plate:
+                    print("Test Plate", "-" * 20)
+                    car_evaluate(plate_model, data_loader_test, device=device)
+                else: car_evaluate(model, data_loader_test, device=device)
         return
 
     if args.visualize_only: # python train.py --resume model_25.pth --visualize-only

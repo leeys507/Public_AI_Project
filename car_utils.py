@@ -12,9 +12,18 @@ import random
 import cv2
 
 class ConvertCartoCOCO(object):
-    CLASSES = (
-        "Unknown", "Car", "Bike", "Bus", "Truck", "Etc_vehicle",
-    )
+    def __init__(self, test_plate):
+        self.test_plate = test_plate
+
+        if self.test_plate == False:
+            self.CLASSES = (
+                "Unknown", "Car", "Bike", "Bus", "Truck", "Etc_vehicle",
+            )
+        else:
+            self.CLASSES = (
+                "Unknown", "License",
+            )
+    
     def __call__(self, image, label_path):
         # return image, target
         f = open(label_path, 'r')
@@ -114,8 +123,8 @@ class CarDetectionOnlyImage(Dataset):
         return len(self.all_images_path)
 
 # get car dataset
-def get_Car(root, image_set, transforms, data_folder="train", annotation_folder="annotation", test_size=0.25):
-    t = [ConvertCartoCOCO()]
+def get_Car(root, image_set, transforms, test_plate=False, data_folder="train", annotation_folder="annotation", test_size=0.25):
+    t = [ConvertCartoCOCO(test_plate)]
     print(t)
     if transforms is not None:
         t.append(transforms)
@@ -208,6 +217,7 @@ def show_plate_in_object(imgs, device, model, threshold=0.6, show=True):
                 cv2.imshow(f"plate in object / threshold: {threshold}", c_img)
                 cv2.waitKey()
                 cv2.destroyAllWindows()
+                
             adding_space = 20
             if type(img) != np.ndarray: # PIL
                 crop_plate.append(img.crop((point[0]-adding_space, point[1]-adding_space, point[2]+adding_space, point[3]+adding_space)))
