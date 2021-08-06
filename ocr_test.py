@@ -54,13 +54,13 @@ def get_text(imgs, image_format, img_save_path="."):
         if image_format.lower() == "jpg": img_format = "JPEG"
         else: img_format = image_format
 
-        if img.width < min_pixel:  # OCR API image larger than 50 x 50
-            padding = int((50 - img.width) / 2)
+        if img.width < min_pixel:  # OCR API image larger than 50 x 50 -> 70 x 70
+            padding = int((min_pixel - img.width) / 2)
             if not (img.width % 2 == 0):
                 padding += 1
             img = add_padding(img, 0, 0, padding, padding, color) # img.resize((50, img.height))
         if img.height < min_pixel:
-            padding = int((50 - img.height) / 2)
+            padding = int((min_pixel - img.height) / 2)
             if not (img.height % 2 == 0):
                 padding += 1
             img = add_padding(img, padding, padding, 0, 0, color) # img.resize((img.width, 50))

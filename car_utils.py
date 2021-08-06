@@ -208,9 +208,10 @@ def show_plate_in_object(imgs, device, model, threshold=0.6, show=True):
                 cv2.imshow(f"plate in object / threshold: {threshold}", c_img)
                 cv2.waitKey()
                 cv2.destroyAllWindows()
+            adding_space = 20
             if type(img) != np.ndarray: # PIL
-                crop_plate.append(img.crop((point[0], point[1], point[2], point[3])))
+                crop_plate.append(img.crop((point[0]-adding_space, point[1]-adding_space, point[2]+adding_space, point[3]+adding_space)))
             else:
-                crop_plate.append(img[point[1]:point[3], point[0]:point[2]]) # ymin:ymax, xmin:xmax
+                crop_plate.append(img[point[1]-adding_space:point[3]+adding_space, point[0]-adding_space:point[2]+adding_space]) # ymin:ymax, xmin:xmax
             break # top score plate
     return crop_plate
