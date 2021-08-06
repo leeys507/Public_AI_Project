@@ -1,6 +1,6 @@
 import requests
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 import matplotlib.pyplot as plt
 import platform
 import numpy as np
@@ -34,6 +34,7 @@ image_urls = [
     'https://www.licenseplates.tv/images/intkore.gif'
 ]
 
+
 def add_padding(pil_img, top, bottom, left, right, color):
     width, height = pil_img.size
     new_width = width + right + left
@@ -41,6 +42,32 @@ def add_padding(pil_img, top, bottom, left, right, color):
     result = Image.new(pil_img.mode, (new_width, new_height), color)
     result.paste(pil_img, (left, top))
     return result
+
+
+def img_filter(img):
+    width, height = img.size
+
+    target = 600
+    if width < target:
+        factor = int(target / width)
+        img = img.resize((factor * width, factor * height), Image.LANCZOS)
+    elif height < target:
+        factor = int(target / height)
+        img = img.resize((factor * width, factor * height), Image.LANCZOS)
+
+    img = img.filter(ImageFilter.SHARPEN)
+    img = img.filter(ImageFilter.MinFilter(3))
+    img = img.filter(ImageFilter.SMOOTH)
+
+    contrast = ImageEnhance.Contrast(img)
+    img = contrast.enhance(1.5)
+
+    img = np.array(img)
+    img = 255.0 * (img / 255.0) ** 1.5
+    img = Image.fromarray(np.uint8(img))
+
+    return img
+
 
 def get_text(imgs, image_format, img_save_path="."):
     if imgs == None or len(imgs) == 0: return
@@ -65,10 +92,7 @@ def get_text(imgs, image_format, img_save_path="."):
                 padding += 1
             img = add_padding(img, padding, padding, 0, 0, color) # img.resize((img.width, 50))
 
-        img_gamma = np.array(img)
-        img_gamma = 255.0 * (img_gamma/255.0)**4
-        img_gamma = Image.fromarray(np.uint8(img_gamma))
-        img_data = img_gamma
+        img_data = img_filter(img)
 
         img_byte_arr = BytesIO()
         img_data.save(img_byte_arr, format=img_format)
