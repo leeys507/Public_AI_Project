@@ -62,7 +62,10 @@ def get_text(imgs, image_format, img_save_path="."):
                 padding += 1
             img = add_padding(img, padding, padding, 0, 0, color) # img.resize((img.width, 50))
 
-        img_data = img
+        img_gamma = np.array(img)
+        img_gamma = 255.0 * (img_gamma/255.0)**4
+        img_gamma = Image.fromarray(np.uint8(img_gamma))
+        img_data = img_gamma
 
         img_byte_arr = BytesIO()
         img_data.save(img_byte_arr, format=img_format)
