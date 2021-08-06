@@ -1,6 +1,6 @@
 import requests
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import matplotlib.pyplot as plt
 import platform
 import numpy as np
@@ -46,23 +46,27 @@ def get_text(imgs, image_format, img_save_path="."):
     if imgs == None or len(imgs) == 0: return
 
     color = (0, 0, 0)
+    min_pixel = 70
     print_text_list = []
+
     for img in imgs:
+        if type(img) == np.ndarray: raise Exception("Only PIL Images")
         if image_format.lower() == "jpg": img_format = "JPEG"
         else: img_format = image_format
 
-        if img.width < 50:  # OCR API image larger than 50 x 50
+        if img.width < min_pixel:  # OCR API image larger than 50 x 50
             padding = int((50 - img.width) / 2)
             if not (img.width % 2 == 0):
                 padding += 1
             img = add_padding(img, 0, 0, padding, padding, color) # img.resize((50, img.height))
-        if img.height < 50:
+        if img.height < min_pixel:
             padding = int((50 - img.height) / 2)
             if not (img.height % 2 == 0):
                 padding += 1
             img = add_padding(img, padding, padding, 0, 0, color) # img.resize((img.width, 50))
 
         img_data = img
+        img_data = img_data.filter(ImageFilter.CONTOUR)
 
         img_byte_arr = BytesIO()
         img_data.save(img_byte_arr, format=img_format)
@@ -109,9 +113,7 @@ def get_text(imgs, image_format, img_save_path="."):
             else:
                 plt.savefig(img_save_path + "/" + time_now + "-" + str(uuid.uuid4()) + "." + img_format)
             plt.axis("off")
-            plt.draw()
-            plt.waitforbuttonpress(0)
-            plt.close()
+            plt.show()
 
         else:
             error_code = result['code']
