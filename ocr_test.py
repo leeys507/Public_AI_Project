@@ -92,7 +92,8 @@ def get_text(imgs, image_format, img_save_path="."):
                 padding += 1
             img = add_padding(img, padding, padding, 0, 0, color) # img.resize((img.width, 50))
 
-        img_data = img_filter(img)
+        img = img_filter(img)
+        img_data = img
 
         img_byte_arr = BytesIO()
         img_data.save(img_byte_arr, format=img_format)
