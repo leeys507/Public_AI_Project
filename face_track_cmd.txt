@@ -1,1 +1,2 @@
 python train.py --epochs 20 --exist-ok
+python train.py --epochs 20 --batch-size 4 --exist-ok
