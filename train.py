@@ -52,11 +52,11 @@ WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
 
 
 def parse_opt(known=False):
-    parser = argparse.ArgumentParser()
-    default_path = os.path.abspath("../../Desktop/")
+    default_path = os.path.join(os.path.expanduser('~'), 'Desktop/') # Desktop
     weights_path = "weights/face_track/"
     pretrained_pt = "yolov5m.pt"
 
+    parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default=default_path + weights_path + pretrained_pt, help='initial weights path') # default yolo5s.pt
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
     parser.add_argument('--data', type=str, default='data/face_track.yaml', help='dataset.yaml path')
@@ -82,7 +82,7 @@ def parse_opt(known=False):
     parser.add_argument('--project', default=default_path, help='save to project/name') # default runs/train
     parser.add_argument('--name', default='weights', help='save to project/name') # default exp (preject_path/name_path) (default runs/train/exp)
     parser.add_argument('--entity', default=None, help='W&B entity')
-    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
+    parser.add_argument('--exist-ok', action='store_false', help='existing project/name ok, do not increment') # default action true
     parser.add_argument('--quad', action='store_true', help='quad dataloader')
     parser.add_argument('--linear-lr', action='store_true', help='linear LR')
     parser.add_argument('--label-smoothing', type=float, default=0.0, help='Label smoothing epsilon')
@@ -106,7 +106,8 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
         opt.resume, opt.noval, opt.nosave, opt.workers, opt.freeze
 
     # Directories
-    w = save_dir / 'face_track'  # weights dir # default weights
+    last_dir_name = "face_track"
+    w = save_dir / last_dir_name  # weights dir # default weights
     w.mkdir(parents=True, exist_ok=True)  # make dir
     last, best = w / 'last.pt', w / 'best.pt'
 
@@ -117,9 +118,9 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
     LOGGER.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
 
     # Save run settings
-    with open(save_dir / 'face_track' / 'hyp.yaml', 'w') as f:
+    with open(save_dir / last_dir_name / 'hyp.yaml', 'w') as f:
         yaml.safe_dump(hyp, f, sort_keys=False)
-    with open(save_dir / 'face_track' / 'opt.yaml', 'w') as f:
+    with open(save_dir / last_dir_name / 'opt.yaml', 'w') as f:
         yaml.safe_dump(vars(opt), f, sort_keys=False)
     data_dict = None
 
@@ -137,11 +138,13 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
             callbacks.register_action(k, callback=getattr(loggers, k))
 
     # Config
+    default_path = os.path.join(os.path.expanduser('~'), 'Desktop') # Desktop
+
     plots = not evolve  # create plots
     cuda = device.type != 'cpu'
     init_seeds(1 + RANK)
     with torch_distributed_zero_first(RANK):
-        data_dict = data_dict or check_dataset(data)  # check if None
+        data_dict = data_dict or check_dataset(data, default_path)  # check if None
     train_path, val_path = data_dict['train'], data_dict['val']
     nc = 1 if single_cls else int(data_dict['nc'])  # number of classes
     names = ['item'] if single_cls and len(data_dict['names']) != 1 else data_dict['names']  # class names
