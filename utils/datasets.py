@@ -152,7 +152,7 @@ class _RepeatSampler(object):
 
 
 class LoadImages:  # for inference
-    def __init__(self, path, img_size=640, stride=32):
+    def __init__(self, path, gt_paths=None, img_size=640, stride=32):
         p = str(Path(path).absolute())  # os-agnostic absolute path
         if '*' in p:
             files = sorted(glob.glob(p, recursive=True))  # glob
@@ -162,6 +162,17 @@ class LoadImages:  # for inference
             files = [p]  # files
         else:
             raise Exception(f'ERROR: {p} does not exist')
+
+        self.ground_truths = None
+        if gt_paths is not None:
+            if '*' in gt_paths:
+                self.ground_truths = sorted(glob.glob(gt_paths, recursive=True))  # glob
+            elif os.path.isdir(gt_paths):
+                self.ground_truths = sorted(glob.glob(os.path.join(gt_paths, '*.*')))  # dir
+            elif os.path.isfile(gt_paths):
+                self.ground_truths = [gt_paths]  # files
+            else:
+                raise Exception(f'ERROR: {gt_paths} does not exist')
 
         images = [x for x in files if x.split('.')[-1].lower() in IMG_FORMATS]
         videos = [x for x in files if x.split('.')[-1].lower() in VID_FORMATS]
@@ -188,6 +199,13 @@ class LoadImages:  # for inference
         if self.count == self.nf:
             raise StopIteration
         path = self.files[self.count]
+
+        targets = None
+        if self.ground_truths is not None:
+            gt_path = self.ground_truths[self.count]
+            targets = get_targets(gt_path)
+        else:
+            targets = [None] * len(self.files)
 
         if self.video_flag[self.count]:
             # Read video
@@ -220,7 +238,7 @@ class LoadImages:  # for inference
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap
+        return path, img, img0, self.cap, targets
 
     def new_video(self, path):
         self.frame = 0
@@ -987,3 +1005,30 @@ def dataset_stats(path='coco128.yaml', autodownload=False, verbose=False, profil
     if verbose:
         print(json.dumps(stats, indent=2, sort_keys=False))
     return stats
+
+def get_targets(gt_path):
+    f = open(gt_path, 'r')
+
+    boxes_and_classes = []
+
+    lines = f.readlines()
+
+    for line in lines:
+        line = line.strip()  # delete line feed
+        line = line.split(" ")
+
+        # x, y, xmax, ymax
+        bbox_class = [float(n) for n in [line[1], line[2], line[3], line[4]]]
+        bbox_class.append(1.0)
+        bbox_class.append(float(line[0]))
+
+        boxes_and_classes.append(bbox_class)
+
+    f.close()
+
+    boxes_and_classes = torch.as_tensor(boxes_and_classes, dtype=torch.float32)
+   
+    if len(boxes_and_classes) < 1:
+        print(gt_path)
+
+    return boxes_and_classes
