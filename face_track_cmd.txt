@@ -4,3 +4,4 @@ python train.py --epochs 20 --batch-size 4
 
 python detect.py --conf-thres 0.25 --view-img
 python detect.py --conf-thres 0.02 --view-img --show-image-count 10 0
+python detect.py --conf-thres 0.02 --view-img --show-image-count 4 0 --show-gt

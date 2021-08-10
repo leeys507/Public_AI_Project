@@ -30,11 +30,15 @@ def parse_opt():
     weights_path = "weights/face_track/"
     saved_pt = "best.pt"
 
-    source_path = default_path + "ai_data/face_track/images/test"
+    source_path = default_path + "ai_data/face_track/images/"
+    ground_truth_path = default_path + "ai_data/face_track/labels/"
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default=default_path + weights_path + saved_pt, help='model.pt path(s)') # default yolo5s.pt
     parser.add_argument('--source', type=str, default=source_path, help='file/dir/URL/glob, 0 for webcam') # default data/images
+    parser.add_argument('--gt-source', type=str, default=ground_truth_path, help='ground truth sources') # ground truth source
+    parser.add_argument('--imgset-dir', type=str, default="test", help='image set directory') # imageset directory
+    parser.add_argument('--show-gt', action='store_true', help='visualize ground_truth')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
@@ -66,6 +70,9 @@ def parse_opt():
 @torch.no_grad()
 def run(weights='yolov5s.pt',  # model.pt path(s)
         source='data/images',  # file/dir/URL/glob, 0 for webcam
+        gt_source='data/labels',
+        imgset_dir='test',
+        show_gt=False,
         imgsz=640,  # inference size (pixels)
         conf_thres=0.25,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
@@ -90,6 +97,14 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
         half=False,  # use FP16 half-precision inference
         show_image_count=[10, 0]
         ):
+    
+    source += imgset_dir
+
+    if show_gt:
+        gt_source += imgset_dir
+    else:
+        gt_source = None
+    
     save_img = not nosave and not source.endswith('.txt')  # save inference images
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://', 'https://'))
@@ -129,7 +144,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
         dataset = LoadStreams(source, img_size=imgsz, stride=stride)
         bs = len(dataset)  # batch_size
     else:
-        dataset = LoadImages(source, img_size=imgsz, stride=stride)
+        dataset = LoadImages(source, gt_source, img_size=imgsz, stride=stride)
         bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
 
@@ -148,7 +163,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
 
     # get image ---------------------------------------------------------------------------------------------------------
     t0 = time.time()
-    for path, img, im0s, vid_cap in dataset:
+    for path, img, im0s, vid_cap, targets in dataset:
         if pt:
             img = torch.from_numpy(img).to(device)
             img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -174,7 +189,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
             pred = apply_classifier(pred, modelc, img, im0s)
 
         # Process predictions
-        for i, det in enumerate(pred):  # detections per image
+        for i, (det, target) in enumerate(zip(pred, targets)):  # detections per image
             if webcam:  # batch_size >= 1
                 p, s, im0, frame = path[i], f'{i}: ', im0s[i].copy(), dataset.count
             else:
@@ -191,17 +206,25 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
             imc = im0.copy() if save_crop else im0  # for save_crop
             if len(det):
                 # Rescale boxes from img_size to im0 size
-                det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
-
                 # padding 추가
                 height_pad = 30
                 width_pad = 30
                 pad_color = [0, 0, 0]
 
+                det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+
                 det[:, 0] += width_pad
                 det[:, 2] += width_pad
                 det[:, 1] += height_pad
                 det[:, 3] += height_pad
+
+                if target is not None:
+                    target = target.unsqueeze(0)
+                    # target[:, :4] = scale_coords(img.shape[2:], target[:, :4], im0.shape).round()
+                    target[:, 0] += width_pad
+                    target[:, 2] += width_pad
+                    target[:, 1] += height_pad
+                    target[:, 3] += height_pad
 
                 im0 = cv2.copyMakeBorder(im0, height_pad, height_pad, 
                 width_pad, width_pad, cv2.BORDER_CONSTANT, value=pad_color)
@@ -234,13 +257,19 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                 # Stream results
                 if view_img:
                     show_info_in_title = ""
+                    if show_gt: show_info_in_title += "|show_ground_truth|*"
                     if not hide_labels or not hide_conf:
                         if not hide_labels and not hide_conf:
-                            show_info_in_title = "|show label and conf| "
+                            show_info_in_title += "|show label and conf| "
                         elif not hide_labels and hide_conf:
-                            show_info_in_title = "|show label| "
+                            show_info_in_title += "|show label| "
                         else:
-                            show_info_in_title = "|show conf| "
+                            show_info_in_title += "|show conf| "
+                    for t in targets:
+                        class_names=["face", "mask_face"]
+                        t = t.type(torch.IntTensor).numpy()
+                        im0 = cv2.rectangle(im0, (t[0], t[1]), (t[2], t[3]), (0, 255, 0), 0, cv2.LINE_AA)
+                        im0 = cv2.putText(im0, class_names[t[5]], (t[0] + 2, t[1] - 9), 0, 0.5, (0, 0, 255), 2)
                     cv2.imshow(show_info_in_title + str(p), im0)
                     cv2.waitKey()  # default 1 millisecond
                     cv2.destroyAllWindows()

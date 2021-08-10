@@ -200,13 +200,6 @@ class LoadImages:  # for inference
             raise StopIteration
         path = self.files[self.count]
 
-        targets = None
-        if self.ground_truths is not None:
-            gt_path = self.ground_truths[self.count]
-            targets = get_targets(gt_path)
-        else:
-            targets = [None] * len(self.files)
-
         if self.video_flag[self.count]:
             # Read video
             self.mode = 'video'
@@ -237,6 +230,14 @@ class LoadImages:  # for inference
         # Convert
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
+
+        targets = None
+        if self.ground_truths is not None:
+            gt_path = self.ground_truths[self.count - 1]
+            height, width, c = img0.shape
+            targets = get_targets(gt_path, width, height)
+        else:
+            targets = [None] * len(self.files)
 
         return path, img, img0, self.cap, targets
 
@@ -1006,7 +1007,7 @@ def dataset_stats(path='coco128.yaml', autodownload=False, verbose=False, profil
         print(json.dumps(stats, indent=2, sort_keys=False))
     return stats
 
-def get_targets(gt_path):
+def get_targets(gt_path, width, height):
     f = open(gt_path, 'r')
 
     boxes_and_classes = []
@@ -1017,8 +1018,18 @@ def get_targets(gt_path):
         line = line.strip()  # delete line feed
         line = line.split(" ")
 
-        # x, y, xmax, ymax
-        bbox_class = [float(n) for n in [line[1], line[2], line[3], line[4]]]
+        # line = x center, y center, w, h
+        line[1] = float(line[1]) * width    # x center
+        line[2] = float(line[2]) * height   # y center
+        line[3] = float(line[3]) * width    # w
+        line[4] = float(line[4]) * height   # h
+
+        xmin = line[1] - (line[3] / 2)
+        ymin = line[2] - (line[4] / 2)
+        xmax = line[1] + (line[3] / 2)
+        ymax = line[2] + (line[4] / 2)
+
+        bbox_class = [n for n in [xmin, ymin, xmax, ymax]]
         bbox_class.append(1.0)
         bbox_class.append(float(line[0]))
 
