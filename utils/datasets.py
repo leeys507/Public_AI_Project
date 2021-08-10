@@ -236,8 +236,6 @@ class LoadImages:  # for inference
             gt_path = self.ground_truths[self.count - 1]
             height, width, c = img0.shape
             targets = get_targets(gt_path, width, height)
-        else:
-            targets = [None] * len(self.files)
 
         return path, img, img0, self.cap, targets
 

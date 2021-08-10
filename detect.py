@@ -189,7 +189,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
             pred = apply_classifier(pred, modelc, img, im0s)
 
         # Process predictions
-        for i, (det, target) in enumerate(zip(pred, targets)):  # detections per image
+        for i, det in enumerate(pred):  # detections per image
             if webcam:  # batch_size >= 1
                 p, s, im0, frame = path[i], f'{i}: ', im0s[i].copy(), dataset.count
             else:
@@ -218,13 +218,12 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                 det[:, 1] += height_pad
                 det[:, 3] += height_pad
 
-                if target is not None:
-                    target = target.unsqueeze(0)
+                if targets is not None:
                     # target[:, :4] = scale_coords(img.shape[2:], target[:, :4], im0.shape).round()
-                    target[:, 0] += width_pad
-                    target[:, 2] += width_pad
-                    target[:, 1] += height_pad
-                    target[:, 3] += height_pad
+                    targets[:, 0] += width_pad
+                    targets[:, 2] += width_pad
+                    targets[:, 1] += height_pad
+                    targets[:, 3] += height_pad
 
                 im0 = cv2.copyMakeBorder(im0, height_pad, height_pad, 
                 width_pad, width_pad, cv2.BORDER_CONSTANT, value=pad_color)
@@ -265,11 +264,13 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                             show_info_in_title += "|show label| "
                         else:
                             show_info_in_title += "|show conf| "
-                    for t in targets:
-                        class_names=["face", "mask_face"]
-                        t = t.type(torch.IntTensor).numpy()
-                        im0 = cv2.rectangle(im0, (t[0], t[1]), (t[2], t[3]), (0, 255, 0), 0, cv2.LINE_AA)
-                        im0 = cv2.putText(im0, class_names[t[5]], (t[0] + 2, t[1] - 9), 0, 0.5, (0, 0, 255), 2)
+                    
+                    if show_gt and targets is not None:
+                        for t in targets:
+                            class_names=["face", "mask_face"]
+                            t = t.type(torch.IntTensor).numpy()
+                            im0 = cv2.rectangle(im0, (t[0], t[1]), (t[2], t[3]), (0, 255, 0), 0, cv2.LINE_AA)
+                            im0 = cv2.putText(im0, class_names[t[5]], (t[0] + 2, t[1] - 9), 0, 0.5, (0, 0, 255), 2)
                     cv2.imshow(show_info_in_title + str(p), im0)
                     cv2.waitKey()  # default 1 millisecond
                     cv2.destroyAllWindows()
