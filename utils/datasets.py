@@ -184,6 +184,7 @@ class LoadImages:  # for inference
         self.nf = ni + nv  # number of files
         self.video_flag = [False] * ni + [True] * nv
         self.mode = 'image'
+        self.count = 0
         if any(videos):
             self.new_video(videos[0])  # new video
         else:
@@ -192,7 +193,6 @@ class LoadImages:  # for inference
                             f'Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}'
 
     def __iter__(self):
-        self.count = 0
         return self
 
     def __next__(self):

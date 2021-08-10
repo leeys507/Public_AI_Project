@@ -137,6 +137,10 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
         session = onnxruntime.InferenceSession(w, None)
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
+    if len(show_image_count) > 2 or len(show_image_count) < 2:
+        print("show_image_count_list out of index. count was set default [10, 0]")
+        show_image_count = [10, 0]
+
     # Dataloader
     if webcam:
         view_img = check_imshow()
@@ -145,6 +149,9 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
         bs = len(dataset)  # batch_size
     else:
         dataset = LoadImages(source, gt_source, img_size=imgsz, stride=stride)
+        if show_image_count[1] > 0:
+            print(f"Skip {show_image_count[1]} images to show")
+            dataset.count = show_image_count[1] # skip image count
         bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
 
@@ -152,13 +159,10 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
     if pt and device.type != 'cpu':
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
 
-    if len(show_image_count) > 2 or len(show_image_count) < 2:
-        print("show_image_count_list out of index. count was set default [10, 0]")
-        show_image_count = [10, 0]
     if show_image_count[0] <= 0:
         show_image_count[0] = dataset.nf
-    skip_image_count = show_image_count[1]
-    check_image_count = skip_image_count + show_image_count[0]
+    # skip_image_count = show_image_count[1]
+    check_image_count = show_image_count[0]
     cnt = 0
 
     # get image ---------------------------------------------------------------------------------------------------------
@@ -252,28 +256,27 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
             # Print time (inference + NMS)
             print(f'{s}Done. ({t2 - t1:.3f}s)')
 
-            if skip_image_count <= cnt:
-                # Stream results
-                if view_img:
-                    show_info_in_title = ""
-                    if show_gt: show_info_in_title += "|show_ground_truth|*"
-                    if not hide_labels or not hide_conf:
-                        if not hide_labels and not hide_conf:
-                            show_info_in_title += "|show label and conf| "
-                        elif not hide_labels and hide_conf:
-                            show_info_in_title += "|show label| "
-                        else:
-                            show_info_in_title += "|show conf| "
-                    
-                    if show_gt and targets is not None:
-                        for t in targets:
-                            class_names=["face", "mask_face"]
-                            t = t.type(torch.IntTensor).numpy()
-                            im0 = cv2.rectangle(im0, (t[0], t[1]), (t[2], t[3]), (0, 255, 0), 0, cv2.LINE_AA)
-                            im0 = cv2.putText(im0, class_names[t[5]], (t[0] + 2, t[1] - 9), 0, 0.5, (0, 0, 255), 2)
-                    cv2.imshow(show_info_in_title + str(p), im0)
-                    cv2.waitKey()  # default 1 millisecond
-                    cv2.destroyAllWindows()
+            # Stream results
+            if view_img:
+                show_info_in_title = ""
+                if show_gt: show_info_in_title += "|show_ground_truth|*"
+                if not hide_labels or not hide_conf:
+                    if not hide_labels and not hide_conf:
+                        show_info_in_title += "|show label and conf| "
+                    elif not hide_labels and hide_conf:
+                        show_info_in_title += "|show label| "
+                    else:
+                        show_info_in_title += "|show conf| "
+                
+                if show_gt and targets is not None:
+                    for t in targets:
+                        class_names=["face", "mask_face"]
+                        t = t.type(torch.IntTensor).numpy()
+                        im0 = cv2.rectangle(im0, (t[0], t[1]), (t[2], t[3]), (0, 255, 0), 0, cv2.LINE_AA)
+                        im0 = cv2.putText(im0, class_names[t[5]], (t[0] + 2, t[1] - 9), 0, 0.5, (0, 0, 255), 2)
+                cv2.imshow(show_info_in_title + str(p), im0)
+                cv2.waitKey()  # default 1 millisecond
+                cv2.destroyAllWindows()
 
                 # Save results (image with detections)
                 if save_img:
