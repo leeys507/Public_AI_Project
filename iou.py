@@ -48,19 +48,17 @@ def intersection_over_union(box1, box2):  # list, list
     return result
 
 
-def indexing_removal_with_iou(output):  # save and return indexes to dismiss
+def indexing_removal_with_iou(det):  # save and return indexes to dismiss
     will_remove_indexes = set()
-    if len(output["boxes"]) <= 1:
+    if len(reversed(det)) <= 1:
         return will_remove_indexes
-    for i in range(0, len(output["boxes"]) - 1):
-        for j in range(i+1, len(output["boxes"])):
-            box1 = output["boxes"][i]
-            box2 = output["boxes"][j]
-            score1, score2 = output["scores"][i], output["scores"][j]
 
-            # box1_size = get_area(box1)
-            # box2_size = get_area(box2)
-            # min_box_size = min(box1_size, box2_size)
+    for i, (*xyxy, conf, cls) in enumerate(reversed(det)):
+        for j, (*xyxyj, confj, clsj) in enumerate(reversed(det)):
+            if i >= j: continue
+            box1, box2 = xyxy, xyxyj
+            score1, score2 = conf, confj
+
 
             if 0.45 < intersection_over_union(box1, box2) < 1:
                 if score1 > score2:
