@@ -27,7 +27,8 @@ def parse_opt(known=False):
 	dir_path = "tracking/"
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--dir_path', type=str, default=dir_path, help='initial weights path')
+	parser.add_argument('--dir-path', type=str, default=dir_path, help='initial path')
+	parser.add_argument('--result-save-path', type=str, default=default_path, help='initial save path')
 	opt = parser.parse_known_args()[0] if known else parser.parse_args()
 	return opt
 
@@ -95,6 +96,8 @@ if __name__ == '__main__':
 	opt = parse_opt()
 	#Load detections for the video. Options available: yolo,ssd and mask-rcnn
 	dir_path = opt.dir_path
+	save_path = opt.result_save_path
+
 	filename = dir_path + "det/det_ssd512.txt"
 	gt_dict = get_dict(filename)
 
@@ -113,7 +116,7 @@ if __name__ == '__main__':
 	mask = np.repeat(mask,3,2)
 
 	fourcc = cv2.VideoWriter_fourcc(*'XVID')
-	out = cv2.VideoWriter('ssd_out_3.avi',fourcc, 10.0, (1920,1080))
+	out = cv2.VideoWriter(save_path + 'ssd_out_3.avi',fourcc, 10.0, (1920,1080))
 
 
 	while True:
