@@ -14,11 +14,22 @@ import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
 import cv2,pickle,sys
+import os
+import argparse
 
 from deepsort import *
 
-
 print("FILE")
+
+def parse_opt(known=False):
+	default_path = os.path.join(os.path.expanduser('~'), 'Desktop/') # Desktop
+	weights_path = "weights/face_track/"
+	dir_path = "tracking/"
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--dir_path', type=str, default=dir_path, help='initial weights path')
+	opt = parser.parse_known_args()[0] if known else parser.parse_args()
+	return opt
 
 
 def get_gt(image,frame_id,gt_dict):
@@ -81,18 +92,20 @@ def get_mask(filename):
 
 if __name__ == '__main__':
 	print("__main__")
+	opt = parse_opt()
 	#Load detections for the video. Options available: yolo,ssd and mask-rcnn
-	filename = 'det/det_ssd512.txt'
+	dir_path = opt.dir_path
+	filename = dir_path + "det/det_ssd512.txt"
 	gt_dict = get_dict(filename)
 
-	cap = cv2.VideoCapture('vdo.avi')
+	cap = cv2.VideoCapture(dir_path + 'vdo.avi')
 
 	#an optional mask for the given video, to focus on the road. 
-	mask = get_mask('roi.jpg')
+	mask = get_mask(dir_path + 'roi.jpg')
 	print("got roi")
 
 	#Initialize deep sort.
-	deepsort = deepsort_rbc(wt_path='./ckpts/model640.pt')
+	deepsort = deepsort_rbc(wt_path=dir_path + 'ckpts/model640.pt')
 
 	frame_id = 1
 
