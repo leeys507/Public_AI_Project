@@ -38,7 +38,7 @@ def parse_opt():
     parser.add_argument('--weights', nargs='+', type=str, default=default_path + weights_path + saved_pt, help='model.pt path(s)') # default yolo5s.pt
     parser.add_argument('--source', type=str, default=source_path, help='file/dir/URL/glob, 0 for webcam') # default data/images
     parser.add_argument('--gt-source', type=str, default=ground_truth_path, help='ground truth sources') # ground truth source
-    parser.add_argument('--imgset-dir', type=str, default="test", help='image set directory') # imageset directory
+    parser.add_argument('--imgset-dir', type=str, default="", help='image set directory') # imageset directory
     parser.add_argument('--show-gt', action='store_true', help='visualize ground_truth')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
@@ -62,7 +62,7 @@ def parse_opt():
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
-    parser.add_argument('--show-image-count', default=[10, 0], nargs='+', type=int,
+    parser.add_argument('--show-image-count', default=[-1, 0], nargs='+', type=int,
                         help='number of show image count and number of skip image count (-1 0 is show all)') # default 16, 22 modify
     opt = parser.parse_args()
     return opt
@@ -96,7 +96,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
         hide_labels=False,  # hide labels
         hide_conf=False,  # hide confidences
         half=False,  # use FP16 half-precision inference
-        show_image_count=[10, 0]
+        show_image_count=[-1, 0]
         ):
     
     source += imgset_dir
@@ -139,9 +139,10 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
     if len(show_image_count) > 2 or len(show_image_count) < 2:
-        print("show_image_count_list out of index. count was set default [10, 0]")
-        show_image_count = [10, 0]
+        print("show_image_count_list out of index. count was set default [-1, 0]")
+        show_image_count = [-1, 0]
 
+    load_stream_check = False
     # Dataloader
     if webcam:
         view_img = check_imshow()
@@ -152,6 +153,9 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
         dataset = LoadImages(source, gt_source, img_size=imgsz, stride=stride)
         if show_image_count[1] > 0:
             print(f"Skip {show_image_count[1]} images to show")
+            if dataset.nf < show_image_count[1]:
+                print(f"Exception: Skip count({show_image_count[1]}) larger than files count({dataset.nf})")
+                exit()
             dataset.count = show_image_count[1] # skip image count
         bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
@@ -160,9 +164,10 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
     if pt and device.type != 'cpu':
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
 
+    show_all_image = False
     if show_image_count[0] <= 0:
-        show_image_count[0] = dataset.nf
-    # skip_image_count = show_image_count[1]
+        show_all_image = True
+
     check_image_count = show_image_count[0]
     cnt = 0
 
@@ -218,20 +223,21 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
 
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
 
-                det[:, 0] += width_pad
-                det[:, 2] += width_pad
-                det[:, 1] += height_pad
-                det[:, 3] += height_pad
+                if dataset.mode == "image":
+                    det[:, 0] += width_pad
+                    det[:, 2] += width_pad
+                    det[:, 1] += height_pad
+                    det[:, 3] += height_pad
 
-                if targets is not None:
-                    # target[:, :4] = scale_coords(img.shape[2:], target[:, :4], im0.shape).round()
-                    targets[:, 0] += width_pad
-                    targets[:, 2] += width_pad
-                    targets[:, 1] += height_pad
-                    targets[:, 3] += height_pad
+                    if targets is not None:
+                        # target[:, :4] = scale_coords(img.shape[2:], target[:, :4], im0.shape).round()
+                        targets[:, 0] += width_pad
+                        targets[:, 2] += width_pad
+                        targets[:, 1] += height_pad
+                        targets[:, 3] += height_pad
 
-                im0 = cv2.copyMakeBorder(im0, height_pad, height_pad, 
-                width_pad, width_pad, cv2.BORDER_CONSTANT, value=pad_color)
+                    im0 = cv2.copyMakeBorder(im0, height_pad, height_pad, 
+                    width_pad, width_pad, cv2.BORDER_CONSTANT, value=pad_color)
 
                 # Print results
                 for c in det[:, -1].unique():
@@ -279,8 +285,14 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                         im0 = cv2.rectangle(im0, (t[0], t[1]), (t[2], t[3]), (0, 255, 0), 0, cv2.LINE_AA)
                         im0 = cv2.putText(im0, class_names[t[5]], (t[0] + 2, t[1] - 9), 0, 0.5, (0, 0, 255), 2)
                 cv2.imshow(show_info_in_title + str(p), im0)
-                cv2.waitKey()  # default 1 millisecond
-                cv2.destroyAllWindows()
+                if dataset.mode == 'image':
+                    k = cv2.waitKey()  # default 1 millisecond
+                    cv2.destroyAllWindows()
+                else:
+                    cv2.waitKey(1)
+                    k = cv2.waitKey(1)
+                if k == ord('q'):
+                    exit()
 
                 # Save results (image with detections)
                 if save_img:
@@ -301,9 +313,10 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                             vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                         vid_writer[i].write(im0)
             
-            cnt += 1
-            if cnt == check_image_count:
-                exit()
+            if show_all_image == False:
+                cnt += 1
+                if cnt == check_image_count:
+                    exit()
 
     # end get image -----------------------------------------------------------------------------------------------------
 

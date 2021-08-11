@@ -6,10 +6,18 @@ python train.py --epochs 50 --batch-size 10 --add-aug hflip
 
 
 /////////// Inference
-python detect.py --conf-thres 0.25 --view-img
-python detect.py --conf-thres 0.02 --view-img --show-image-count 10 0
-python detect.py --conf-thres 0.02 --view-img --show-image-count 4 0 --show-gt
-python detect.py --conf-thres 0.6 --view-img --show-image-count 10 0 --show-gt
+python detect.py --conf-thres 0.25 --view-img --imgset-dir test
+python detect.py --conf-thres 0.6 --view-img --show-image-count 10 0 --imgset-dir test
+python detect.py --conf-thres 0.6 --view-img --show-image-count 4 0 --imgset-dir test --show-gt
+python detect.py --conf-thres 0.6 --view-img --show-image-count 10 0 --imgset-dir test --show-gt
+
+////////// Inference video
+python detect.py --conf-thres 0.6 --source ../../Desktop/ai_data/face_track/ --view-img --imgset-dir video --nosave --show-image-count -1 0
+
+////////// Inference stream
+python detect.py --conf-thres 0.6 --source https://www.youtube.com/watch?v=Pyx59BRQtOM --view-img  --nosave --show-image-count -1 0
+python detect.py --conf-thres 0.6 --source stream.txt --view-img  --nosave --show-image-count -1 0
 
 
 /////////// Tracking
+python tracking/test_on_video.py
