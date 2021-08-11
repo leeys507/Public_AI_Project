@@ -258,7 +258,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
 
             # Stream results
             if view_img:
-                show_info_in_title = ""
+                show_info_in_title = f"conf thres: {conf_thres} "
                 if show_gt: show_info_in_title += "|show_ground_truth|*"
                 if not hide_labels or not hide_conf:
                     if not hide_labels and not hide_conf:
