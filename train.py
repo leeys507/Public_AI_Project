@@ -261,7 +261,7 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
 
     # Process 0
     if RANK in [-1, 0]:
-        val_loader = create_dataloader(val_path, imgsz, batch_size // WORLD_SIZE * 2, gs, single_cls,
+        val_loader = create_dataloader(val_path, add_aug, imgsz, batch_size // WORLD_SIZE * 2, gs, single_cls,
                                        hyp=hyp, cache=None if noval else opt.cache, rect=True, rank=-1,
                                        workers=workers, pad=0.5,
                                        prefix=colorstr('val: '))[0]
@@ -405,6 +405,7 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
             final_epoch = epoch + 1 == epochs
             if not noval or final_epoch:  # Calculate mAP
                 results, maps, _ = val.run(data_dict,
+                                           add_aug=add_aug,
                                            batch_size=batch_size // WORLD_SIZE * 2,
                                            imgsz=imgsz,
                                            model=ema.ema,
