@@ -287,7 +287,6 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                     k = cv2.waitKey()  # default 1 millisecond
                     cv2.destroyAllWindows()
                 else:
-                    cv2.waitKey(1)
                     k = cv2.waitKey(1)
                 if k == ord('q'):   # q to quit
                     print("Exit")
