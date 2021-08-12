@@ -23,7 +23,7 @@ class DeepSort(object):
         self.tracker = Tracker(
             metric, max_iou_distance=max_iou_distance, max_age=max_age, n_init=n_init)
 
-    def update(self, bbox_xywh, confidences, classes, ori_img):
+    def update(self, dataset_mode, bbox_xywh, confidences, classes, ori_img):
         self.height, self.width = ori_img.shape[:2]
         # generate detections
         features = self._get_features(bbox_xywh, ori_img)
@@ -42,8 +42,9 @@ class DeepSort(object):
         # output bbox identities
         outputs = []
         for track in self.tracker.tracks:
-            if not track.is_confirmed() or track.time_since_update > 1:
-                continue
+            if not dataset_mode == "image":
+                if not track.is_confirmed() or track.time_since_update > 1:
+                    continue
             box = track.to_tlwh()
             x1, y1, x2, y2 = self._tlwh_to_xyxy(box)
             track_id = track.track_id

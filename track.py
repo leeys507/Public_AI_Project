@@ -6,7 +6,7 @@ from models.experimental import attempt_load
 from utils.datasets import LoadImages, LoadStreams
 from utils.general import check_img_size, non_max_suppression, scale_coords, check_imshow, xyxy2xywh, colorstr
 from utils.torch_utils import select_device, time_sync
-from utils.plots import plot_one_box
+from utils.plots import colors, plot_one_box
 from deep_sort_pytorch.utils.parser import get_config
 from deep_sort_pytorch.deep_sort import DeepSort
 import argparse
@@ -20,16 +20,6 @@ import torch
 import torch.backends.cudnn as cudnn
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-
-
-def compute_color_for_id(label):
-    """
-    Simple function that adds fixed color depending on the id
-    """
-    palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
-
-    color = [int((p * (label ** 2 - label + 1)) % 255) for p in palette]
-    return tuple(color)
 
 
 def detect(opt):
@@ -184,7 +174,7 @@ def detect(opt):
                 clss = det[:, 5]
 
                 # pass detections to deepsort
-                outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss, im0)
+                outputs = deepsort.update(dataset.mode, xywhs.cpu(), confs.cpu(), clss, im0)
                 
                 # draw boxes for visualization
                 if len(outputs) > 0:
@@ -195,10 +185,8 @@ def detect(opt):
                         cls = output[5]
 
                         c = int(cls)  # integer class
-                        # label = f'{id} {names[c]} {conf:.2f}'
-                        color = compute_color_for_id(id)
                         label = None if hide_labels else (names[c] if hide_conf else f'{id} {names[c]} {conf:.2f}')
-                        plot_one_box(bboxes, im0, label=label, color=color, line_thickness=2)
+                        plot_one_box(bboxes, im0, label=label, color=colors(id, True), line_thickness=2)
 
                         if save_txt:
                             # to MOT format

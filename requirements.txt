@@ -31,12 +31,11 @@ albumentations>=1.0.3
 thop  # FLOPs computation
 
 # tracking -----------------------------------------
-tensorflow_gpu>=1.15.4
-imgaug>=0.2.8
-nonechucks>=0.3.1
-scikit_learn==0.22.2
-pafy
-youtube-dl
-intel-openmp
-easydict
-
+# tensorflow_gpu>=1.15.4
+# imgaug>=0.2.8
+# nonechucks>=0.3.1
+# scikit_learn==0.22.2
+# pafy
+# youtube-dl
+# intel-openmp
+# easydict

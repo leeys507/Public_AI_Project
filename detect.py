@@ -57,7 +57,7 @@ def parse_opt():
     parser.add_argument('--update', action='store_true', help='update all models')
     parser.add_argument('--project', default=default_path, help='save results to project/name') # default runs/detect
     parser.add_argument('--name', default='ai_data/face_track/visualize', help='save results to project/name') # default exp
-    parser.add_argument('--exist-ok', defalut=False, action='store_true', help='existing project/name ok, do not increment')
+    parser.add_argument('--exist-ok', default=False, action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
