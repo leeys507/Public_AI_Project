@@ -18,6 +18,8 @@ from pathlib import Path
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
+import os
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
 def compute_color_for_id(label):
