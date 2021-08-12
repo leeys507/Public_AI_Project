@@ -21,3 +21,10 @@ python detect.py --conf-thres 0.6 --source stream.txt --view-img  --nosave --sho
 
 /////////// Tracking
 python tracking/test_on_video.py
+python track.py --conf-thres 0.6 --source ../../Desktop/ai_data/face_track/video/vdo.avi --show-vid
+/// image ground truth
+python track.py --conf-thres 0.6 --show-vid --show-image-count 10 0 --imgset-dir test --show-gt
+
+/////////// Tracking no mask face
+python track.py --conf-thres 0.6 --source ../../Desktop/ai_data/face_track/ --imgset-dir video --classes 0 --show-vid
+python track.py --conf-thres 0.6 --source https://www.youtube.com/watch?v=Pyx59BRQtOM --classes 0 --show-vid

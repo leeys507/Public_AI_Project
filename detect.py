@@ -57,7 +57,7 @@ def parse_opt():
     parser.add_argument('--update', action='store_true', help='update all models')
     parser.add_argument('--project', default=default_path, help='save results to project/name') # default runs/detect
     parser.add_argument('--name', default='ai_data/face_track/visualize', help='save results to project/name') # default exp
-    parser.add_argument('--exist-ok', action='store_false', help='existing project/name ok, do not increment')
+    parser.add_argument('--exist-ok', defalut=False, action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
@@ -142,7 +142,6 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
         print("show_image_count_list out of index. count was set default [-1, 0]")
         show_image_count = [-1, 0]
 
-    load_stream_check = False
     # Dataloader
     if webcam:
         view_img = check_imshow()
@@ -245,7 +244,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                 # Write results
-                will_remove_index = indexing_removal_with_iou(det)
+                # will_remove_index = indexing_removal_with_iou(det)
 
                 for i, (*xyxy, conf, cls) in enumerate(reversed(det)):
                     # if i in will_remove_index: continue  # apply iou
@@ -280,10 +279,9 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                 
                 if show_gt and targets is not None:
                     for t in targets:
-                        class_names=["face", "mask_face"]
                         t = t.type(torch.IntTensor).numpy()
                         im0 = cv2.rectangle(im0, (t[0], t[1]), (t[2], t[3]), (0, 255, 0), 0, cv2.LINE_AA)
-                        im0 = cv2.putText(im0, class_names[t[5]], (t[0] + 2, t[1] - 9), 0, 0.5, (0, 0, 255), 2)
+                        im0 = cv2.putText(im0, names[t[5]], (t[0] + 2, t[1] - 9), 0, 0.5, (0, 0, 255), 2)
                 cv2.imshow(show_info_in_title + str(p), im0)
                 if dataset.mode == 'image':
                     k = cv2.waitKey()  # default 1 millisecond
@@ -291,7 +289,8 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                 else:
                     cv2.waitKey(1)
                     k = cv2.waitKey(1)
-                if k == ord('q'):
+                if k == ord('q'):   # q to quit
+                    print("Exit")
                     exit()
 
                 # Save results (image with detections)
@@ -316,6 +315,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
             if show_all_image == False:
                 cnt += 1
                 if cnt == check_image_count:
+                    print("Exit")
                     exit()
 
     # end get image -----------------------------------------------------------------------------------------------------
