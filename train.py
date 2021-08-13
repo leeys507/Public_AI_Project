@@ -411,7 +411,7 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
                                            model=ema.ema,
                                            single_cls=single_cls,
                                            dataloader=val_loader,
-                                           save_dir=save_dir,
+                                           save_dir=save_dir / log_path,
                                            save_json=is_coco and final_epoch,
                                            verbose=nc < 50 and final_epoch,
                                            plots=plots and final_epoch,

@@ -201,7 +201,10 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
 
         # Process predictions
         for i, det in enumerate(pred):  # detections per image
-            det = det[(det[:, 5:6] == 0).any(1)]
+            if show_gt and add_pred_labels:
+                predict_label_num = 0
+                det = det[(det[:, 5:6] == predict_label_num).any(1)]
+
             if webcam:  # batch_size >= 1
                 p, s, im0, frame = path[i], f'{i}: ', im0s[i].copy(), dataset.count
             else:
@@ -216,6 +219,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
             s += '%gx%g ' % img.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy() if save_crop else im0  # for save_crop
+            
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 # padding 추가
