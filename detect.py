@@ -57,13 +57,14 @@ def parse_opt():
     parser.add_argument('--update', action='store_true', help='update all models')
     parser.add_argument('--project', default=default_path, help='save results to project/name') # default runs/detect
     parser.add_argument('--name', default='ai_data/face_track/visualize', help='save results to project/name') # default exp
-    parser.add_argument('--exist-ok', default=False, action='store_true', help='existing project/name ok, do not increment')
+    parser.add_argument('--exist-ok', action='store_false', help='existing project/name ok, do not increment')
     parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--show-image-count', default=[-1, 0], nargs='+', type=int,
                         help='number of show image count and number of skip image count (-1 0 is show all)') # default 16, 22 modify
+    parser.add_argument('--add-pred-labels', action='store_true', help='add prediction labels in origin labels')
     opt = parser.parse_args()
     return opt
 
@@ -96,7 +97,8 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
         hide_labels=False,  # hide labels
         hide_conf=False,  # hide confidences
         half=False,  # use FP16 half-precision inference
-        show_image_count=[-1, 0]
+        show_image_count=[-1, 0],
+        add_pred_labels = False
         ):
     
     source += imgset_dir
@@ -199,6 +201,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
 
         # Process predictions
         for i, det in enumerate(pred):  # detections per image
+            det = det[(det[:, 5:6] == 0).any(1)]
             if webcam:  # batch_size >= 1
                 p, s, im0, frame = path[i], f'{i}: ', im0s[i].copy(), dataset.count
             else:
@@ -247,6 +250,28 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                 # will_remove_index = indexing_removal_with_iou(det)
 
                 for i, (*xyxy, conf, cls) in enumerate(reversed(det)):
+                    # add model prediction labels in origin files
+                    if show_gt and add_pred_labels:
+                        xyxy[0] = xyxy[0] - width_pad
+                        xyxy[1] = xyxy[1] - height_pad
+                        xyxy[2] = xyxy[2] - width_pad
+                        xyxy[3] = xyxy[3] - height_pad
+
+                        label_number = float(2)
+                        cls = torch.tensor(label_number).to("cuda:0")
+
+                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()
+                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)
+                        line_count = 0
+                        with open(gt_source + "/" + txt_path.split("\\")[-1] + ".txt", 'r') as ff:
+                            for l in ff:
+                                line_count += 1
+                                break
+
+                        with open(gt_source + "/" + txt_path.split("\\")[-1] + ".txt", 'a') as f:
+                                if line_count != 0: f.write("\n")
+                                f.write(('%g ' * len(line)).rstrip() % line)
+
                     # if i in will_remove_index: continue  # apply iou
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
@@ -258,6 +283,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                         c = int(cls)  # integer class
                         # conf 이미지 신뢰도, hide_conf 이미지 신뢰도 표시 X
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                        xyxy[0]
                         plot_one_box(xyxy, im0, label=label, color=colors(c, True), line_thickness=line_thickness)
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)

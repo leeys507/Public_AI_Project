@@ -274,8 +274,8 @@ if __name__ == '__main__':
     ground_truth_path = default_path + "ai_data/face_track/labels/"
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--yolo_weights', type=str, default=default_path + weights_path + saved_pt, help='model.pt path(s)') # default yolo5s.pt
-    parser.add_argument('--deep_sort_weights', type=str, default='deep_sort_pytorch/deep_sort/deep/checkpoint/ckpt.t7', help='ckpt.t7 path')
+    parser.add_argument('--yolo-weights', type=str, default=default_path + weights_path + saved_pt, help='model.pt path(s)') # default yolo5s.pt
+    parser.add_argument('--deep-sort-weights', type=str, default='deep_sort_pytorch/deep_sort/deep/checkpoint/ckpt.t7', help='ckpt.t7 path')
     # file/folder, 0 for webcam
     parser.add_argument('--source', type=str, default=source_path, help='source')
     parser.add_argument('--output', type=str, default='inference/output', help='output folder')  # output folder
