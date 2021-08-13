@@ -14,5 +14,5 @@ val: images/val  # train images (relative to 'path') 5000 images
 test: images/test  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
 
 # Classes
-nc: 2  # number of classes
+nc: 3  # number of classes
 names: ['face', 'mask_face', 'person']
