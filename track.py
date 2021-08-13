@@ -18,7 +18,9 @@ from pathlib import Path
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
-import os
+from iou import *
+import numpy as np
+
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
@@ -173,9 +175,17 @@ def detect(opt):
                 confs = det[:, 4]
                 clss = det[:, 5]
 
+                xyxys = det[:, 0:4].cpu().numpy()
+                will_remove_indexes = indexing_person_with_iou(xyxys, clss.cpu().numpy())
+
+                new_xywhs = torch.tensor(np.array([x.cpu().numpy() for idx, x in enumerate(xywhs.cpu()) if idx not in will_remove_indexes]))
+                new_confs = torch.tensor(np.array([x.cpu().numpy() for idx, x in enumerate(confs.cpu()) if idx not in will_remove_indexes]))
+                new_clss = torch.tensor(np.array([x.cpu().numpy() for idx, x in enumerate(clss.cpu()) if idx not in will_remove_indexes]))
+
                 # pass detections to deepsort
-                outputs = deepsort.update(dataset.mode, xywhs.cpu(), confs.cpu(), clss, im0)
-                
+                # outputs = deepsort.update(dataset.mode, xywhs.cpu(), confs.cpu(), clss, im0) # original code
+                outputs = deepsort.update(dataset.mode, new_xywhs, new_confs, new_clss, im0) # apply iou to face and person code
+
                 # draw boxes for visualization
                 if len(outputs) > 0:
                     for j, (output, conf) in enumerate(zip(outputs, confs)): 

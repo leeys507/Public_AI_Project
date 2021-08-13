@@ -67,3 +67,42 @@ def indexing_removal_with_iou(det):  # save and return indexes to dismiss
                     will_remove_indexes.add(i)
 
     return will_remove_indexes
+
+def get_min_box(box1, box2):
+    box1_size = get_area(box1)
+    box2_size = get_area(box2)
+    return min(box1_size, box2_size)
+
+
+# xyxys, clss, index -> group by clss
+# compare class 0 or 1(faces) <-> class 2(person) -> calculate iou -> return will remove box (almost person) indexes
+
+def indexing_person_with_iou(xyxys, clss):  # need (xmin, ymin, xmax, ymax) format
+    class_dict = dict()
+    will_remove_index = set()
+    for i, (xyxy, cls) in enumerate(zip(xyxys, clss)):
+        cls = int(cls)
+        if cls in class_dict:
+            class_dict[cls].append((xyxy, i))
+        else:
+            class_dict[cls] = [(xyxy, i)]
+
+    if 0 in class_dict and 2 in class_dict:
+        for face_xyxy, face_idx in class_dict[0]:
+            for person_xyxy, person_idx in class_dict[2]:
+                min_box = get_min_box(face_xyxy, person_xyxy)
+                intersection_area = get_intersection_area(face_xyxy, person_xyxy)
+                if intersection_over_union(face_xyxy, person_xyxy) > 0.8 or intersection_area/min_box > 0.65:
+                    will_remove_index.add(face_idx) # remove face or person box
+
+
+    if 1 in class_dict and 2 in class_dict:
+        for face_xyxy, face_idx in class_dict[1]:
+            for person_xyxy, person_idx in class_dict[2]:
+                min_box = get_min_box(face_xyxy, person_xyxy)
+                intersection_area = get_intersection_area(face_xyxy, person_xyxy)
+                if intersection_over_union(face_xyxy, person_xyxy) > 0.8 or intersection_area/min_box > 0.65:
+                    will_remove_index.add(face_idx) # remove face or person box
+
+    return will_remove_index
+
