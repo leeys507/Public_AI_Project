@@ -176,11 +176,11 @@ def detect(opt):
                 clss = det[:, 5]
 
                 xyxys = det[:, 0:4].cpu().numpy()
-                will_remove_indexes = indexing_person_with_iou(xyxys, clss.cpu().numpy())
+                pair_fp, will_remove_indexes = indexing_person_with_intersection(xyxys, clss.cpu().numpy())
 
                 new_xywhs = torch.tensor(np.array([x.cpu().numpy() for idx, x in enumerate(xywhs.cpu()) if idx not in will_remove_indexes]))
                 new_confs = torch.tensor(np.array([x.cpu().numpy() for idx, x in enumerate(confs.cpu()) if idx not in will_remove_indexes]))
-                new_clss = torch.tensor(np.array([x.cpu().numpy() for idx, x in enumerate(clss.cpu()) if idx not in will_remove_indexes]))
+                pair_fp, new_clss = to_tensor_from_clss(clss, pair_fp, will_remove_indexes)
 
                 # pass detections to deepsort
                 # outputs = deepsort.update(dataset.mode, xywhs.cpu(), confs.cpu(), clss, im0) # original code
@@ -195,8 +195,21 @@ def detect(opt):
                         cls = output[5]
 
                         c = int(cls)  # integer class
-                        label = None if hide_labels else (names[c] if hide_conf else f'{id} {names[c]} {conf:.2f}')
-                        plot_one_box(bboxes, im0, label=label, color=colors(id, True), line_thickness=2)
+
+                        if c == 2:  # class == 2 (person)
+                            if j in pair_fp:
+                                face_label = names[pair_fp[j]]
+                                visualize_name = f'{face_label}, ' + names[c]
+                                label_color = pair_fp[j]
+                            else:
+                                visualize_name = names[c]
+                                label_color = c
+                        else:
+                            visualize_name = names[c]
+                            label_color = c
+
+                        label = None if hide_labels else (names[c] if hide_conf else f'{id} {visualize_name} {conf:.2f}')
+                        plot_one_box(bboxes, im0, label=label, color=colors(label_color+1, True), line_thickness=2)
 
                         if save_txt:
                             # to MOT format
