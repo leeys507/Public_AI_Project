@@ -78,13 +78,12 @@ def get_min_box(box1, box2):
 
 def get_suitable_face(saved_faces, person_box):
     result = saved_faces[0]
-    pbox_mid = person_box[0] + (person_box[2] - person_box[0] + 1)/2
     for i, i_item in enumerate(saved_faces):
         for j, j_item in enumerate(saved_faces):
             if i >= j: continue
-            i_mid = i_item[1][0] + (i_item[1][2] - i_item[1][0] + 1)/2
-            j_mid = j_item[1][0] + (j_item[1][2] - j_item[1][0] + 1)/2
-            if abs(pbox_mid - i_mid) < abs(pbox_mid - j_mid): result = i_item
+            i_inter = get_intersection_area(i_item[1], person_box)
+            j_inter = get_intersection_area(j_item[1], person_box)
+            if (i_inter + get_area(i_item[1])) > (j_inter + get_area(j_item[1])): result = i_item
             else: result = j_item
 
     return result
@@ -111,7 +110,7 @@ def indexing_person_with_intersection(xyxys, clss):  # need (xmin, ymin, xmax, y
             saved_faces = []
             for face_idx, face_xyxy, face_cls in faces:
                 intersection_area = get_intersection_area(face_xyxy, person_xyxy)
-                if intersection_area/get_area(face_xyxy) >= 0.8:
+                if intersection_area/get_area(face_xyxy) >= 0.75:
                     saved_faces.append([face_idx, face_xyxy, face_cls])
             if len(saved_faces) > 0:
                 suitable_face = get_suitable_face(saved_faces, person_xyxy)
