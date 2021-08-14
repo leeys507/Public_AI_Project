@@ -76,41 +76,47 @@ def get_min_box(box1, box2):
     box2_size = get_area(box2)
     return min(box1_size, box2_size)
 
+def get_suitable_face(saved_faces, person_box):
+    result = saved_faces[0]
+    pbox_mid = person_box[0] + (person_box[2] - person_box[0] + 1)/2
+    for i, i_item in enumerate(saved_faces):
+        for j, j_item in enumerate(saved_faces):
+            if i >= j: continue
+            i_mid = i_item[1][0] + (i_item[1][2] - i_item[1][0] + 1)/2
+            j_mid = j_item[1][0] + (j_item[1][2] - j_item[1][0] + 1)/2
+            if abs(pbox_mid - i_mid) < abs(pbox_mid - j_mid): result = i_item
+            else: result = j_item
+
+    return result
 
 # xyxys, clss, index -> group by clss
 # compare class 0 or 1(faces) <-> class 2(person) -> calculate iou -> return will remove box (almost person) indexes
 
 def indexing_person_with_intersection(xyxys, clss):  # need (xmin, ymin, xmax, ymax) format
-    class_dict = dict()
     will_remove_index = set()  # return value
     pair_fp = dict()  # return value
     # pair_fp -> {person_index: face_class_number} format
+    faces = list()
+    people = list()
 
     for i, (xyxy, cls) in enumerate(zip(xyxys, clss)):
         cls = int(cls)
-        if cls in class_dict:
-            class_dict[cls].append((xyxy, i))
+        if cls != 2:
+            faces.append([i, xyxy, cls])
         else:
-            class_dict[cls] = [(xyxy, i)]
+            people.append([i, xyxy, cls])
 
-    if 0 in class_dict and 2 in class_dict:
-        for face_xyxy, face_idx in class_dict[0]:
-            for person_xyxy, person_idx in class_dict[2]:
-                min_box = get_min_box(face_xyxy, person_xyxy)
+    for person_idx, person_xyxy, person_cls in people:
+        if len(faces) > 0:
+            saved_faces = []
+            for face_idx, face_xyxy, face_cls in faces:
                 intersection_area = get_intersection_area(face_xyxy, person_xyxy)
-                if intersection_area/min_box >= 0.75:
-                    will_remove_index.add(face_idx) # remove face box
-                    pair_fp[person_idx] = 0 # person_idx => index before removing.., have issue
-
-
-    if 1 in class_dict and 2 in class_dict:
-        for face_xyxy, face_idx in class_dict[1]:
-            for person_xyxy, person_idx in class_dict[2]:
-                min_box = get_min_box(face_xyxy, person_xyxy)
-                intersection_area = get_intersection_area(face_xyxy, person_xyxy)
-                if intersection_area/min_box >= 0.75:
-                    will_remove_index.add(face_idx) # remove face box
-                    pair_fp[person_idx] = 1  # person_idx => index before removing.., have issue
+                if intersection_area/get_area(face_xyxy) >= 0.8:
+                    saved_faces.append([face_idx, face_xyxy, face_cls])
+            if len(saved_faces) > 0:
+                suitable_face = get_suitable_face(saved_faces, person_xyxy)
+                will_remove_index.add(suitable_face[0])
+                pair_fp[person_idx] = suitable_face[2]
 
     return pair_fp, will_remove_index
 
