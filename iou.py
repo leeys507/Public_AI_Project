@@ -105,17 +105,19 @@ def indexing_person_with_intersection(xyxys, clss):  # need (xmin, ymin, xmax, y
         else:
             people.append([i, xyxy, cls])
 
+    was_paired_face_idxes = set()
     for person_idx, person_xyxy, person_cls in people:
         if len(faces) > 0:
             saved_faces = []
             for face_idx, face_xyxy, face_cls in faces:
                 intersection_area = get_intersection_area(face_xyxy, person_xyxy)
-                if intersection_area/get_area(face_xyxy) >= 0.75:
+                if intersection_area/get_area(face_xyxy) >= 0.8 and face_idx not in was_paired_face_idxes:
                     saved_faces.append([face_idx, face_xyxy, face_cls])
             if len(saved_faces) > 0:
-                suitable_face = get_suitable_face(saved_faces, person_xyxy)
-                will_remove_index.add(suitable_face[0])
-                pair_fp[person_idx] = suitable_face[2]
+                suitable_face = get_suitable_face(saved_faces, person_xyxy)  # person has only one face, get suitable face
+                will_remove_index.add(suitable_face[0])  # suitable_face[0] = face_idx
+                was_paired_face_idxes.add(suitable_face[0])
+                pair_fp[person_idx] = suitable_face[2]  # suitable_face[2] = face_cls
 
     return pair_fp, will_remove_index
 
