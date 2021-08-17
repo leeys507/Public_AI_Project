@@ -720,3 +720,9 @@ def increment_path(path, exist_ok=False, sep='', mkdir=False):
     if not dir.exists() and mkdir:
         dir.mkdir(parents=True, exist_ok=True)  # make directory
     return path
+
+def tracking_id_check(id_list):
+    for id in id_list:
+        if id <= 0:
+            return False
+    return True

@@ -5,7 +5,7 @@ sys.path.insert(0, './yolov5')
 from utils.google_utils import attempt_download
 from models.experimental import attempt_load
 from utils.datasets import LoadImages, LoadStreams
-from utils.general import check_img_size, non_max_suppression, scale_coords, check_imshow, xyxy2xywh, colorstr
+from utils.general import check_img_size, non_max_suppression, scale_coords, check_imshow, tracking_id_check, xyxy2xywh, colorstr
 from utils.torch_utils import select_device, time_sync
 from utils.plots import colors, plot_one_box
 from deep_sort_pytorch.utils.parser import get_config
@@ -113,7 +113,7 @@ def detect(opt):
 
     check_image_count = show_image_count[0]
     cnt = 0
-    tracking_id = -1
+    tracking_id = [-1]
 
     # get image ---------------------------------------------------------------------------------------------------------
     for frame_idx, (path, img, im0s, vid_cap, targets) in enumerate(dataset):
@@ -212,7 +212,7 @@ def detect(opt):
                             label = None if hide_labels else (names[c] if hide_conf else f'{id} {visualize_name} {conf:.2f}')
                             plot_one_box(bboxes, im0, label=label, color=colors(label_color + 1, True), line_thickness=2)
 
-                        if tracking_id > 0 and tracking_id != id:
+                        if tracking_id_check(tracking_id) and id not in tracking_id:
                             im0 = de_identification(im0, bboxes[0], bboxes[1], bboxes[2], bboxes[3])
 
                         if save_txt:
@@ -259,7 +259,7 @@ def detect(opt):
                     print("Exit")
                     exit()
                 elif k == ord('i'):
-                    tracking_id = int(input("Input Tracking ID(0 or less is Show All): "))
+                    tracking_id = [int(x) for x in input("Input Tracking ID list(0 or less is Show All)\n(Separated by white space): ").split()]
 
             # Save results (image with detections)
             if save_vid:
