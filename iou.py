@@ -111,8 +111,11 @@ def indexing_person_with_intersection(xyxys, clss):  # need (xmin, ymin, xmax, y
             saved_faces = []
             for face_idx, face_xyxy, face_cls in faces:
                 intersection_area = get_intersection_area(face_xyxy, person_xyxy)
-                if intersection_area/get_area(face_xyxy) >= 0.8 and face_idx not in was_paired_face_idxes:
-                    saved_faces.append([face_idx, face_xyxy, face_cls])
+                min_area = min(get_area(face_xyxy), get_area(person_xyxy))
+                if intersection_area/min_area >= 0.8:
+                    if face_idx not in was_paired_face_idxes:
+                        saved_faces.append([face_idx, face_xyxy, face_cls])
+                    will_remove_index.add(face_idx)
             if len(saved_faces) > 0:
                 suitable_face = get_suitable_face(saved_faces, person_xyxy)  # person has only one face, get suitable face
                 will_remove_index.add(suitable_face[0])  # suitable_face[0] = face_idx
@@ -120,21 +123,3 @@ def indexing_person_with_intersection(xyxys, clss):  # need (xmin, ymin, xmax, y
                 pair_fp[person_idx] = suitable_face[2]  # suitable_face[2] = face_cls
 
     return pair_fp, will_remove_index
-
-# etc utils
-
-def to_tensor_from_clss(tensor_item, pairs, will_remove_indexes):
-    list_item = list()
-    new_pairs = dict()
-    for idx, x in enumerate(tensor_item.cpu()):
-        if idx not in will_remove_indexes:
-            list_item.append(x.cpu().numpy())
-            if idx in pairs:
-                new_pairs[len(list_item)-1] = pairs[idx]
-
-    if len(new_pairs) == 0:
-        new_pairs = pairs
-
-    to_tensor = torch.tensor(np.array(list_item))
-
-    return new_pairs, to_tensor

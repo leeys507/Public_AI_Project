@@ -177,21 +177,16 @@ def detect(opt):
                 confs = det[:, 4]
                 clss = det[:, 5]
 
-                xyxys = det[:, 0:4].cpu().numpy()
-                pair_fp, will_remove_indexes = indexing_person_with_intersection(xyxys, clss.cpu().numpy())
-
-                new_xywhs = torch.tensor(np.array([x.cpu().numpy() for idx, x in enumerate(xywhs.cpu()) if idx not in will_remove_indexes]))
-                new_confs = torch.tensor(np.array([x.cpu().numpy() for idx, x in enumerate(confs.cpu()) if idx not in will_remove_indexes]))
-                pair_fp, new_clss = to_tensor_from_clss(clss, pair_fp, will_remove_indexes)
-
                 # pass detections to deepsort
-                # outputs = deepsort.update(dataset.mode, xywhs.cpu(), confs.cpu(), clss, im0) # original code
-                outputs = deepsort.update(dataset.mode, new_xywhs, new_confs, new_clss, im0) # apply iou to face and person code
+                outputs = deepsort.update(dataset.mode, xywhs.cpu(), confs.cpu(), clss, im0)
 
                 # draw boxes for visualization
                 if len(outputs) > 0:
+                    all_bboxes = [x[0:4] for x in outputs]
+                    all_clss = [x[5] for x in outputs]
+                    pair_fp, will_remove_indexes = indexing_person_with_intersection(all_bboxes, all_clss)
                     for j, (output, conf) in enumerate(zip(outputs, confs)): 
-                        
+                        if j in will_remove_indexes: continue  # apply iou
                         bboxes = output[0:4]
                         id = output[4]
                         cls = output[5]
