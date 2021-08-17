@@ -1,4 +1,5 @@
 import sys
+from utils.d_id import de_identification
 sys.path.insert(0, './yolov5')
 
 from utils.google_utils import attempt_download
@@ -112,6 +113,7 @@ def detect(opt):
 
     check_image_count = show_image_count[0]
     cnt = 0
+    tracking_id = -1
 
     # get image ---------------------------------------------------------------------------------------------------------
     for frame_idx, (path, img, im0s, vid_cap, targets) in enumerate(dataset):
@@ -210,6 +212,8 @@ def detect(opt):
                             label = None if hide_labels else (names[c] if hide_conf else f'{id} {visualize_name} {conf:.2f}')
                             plot_one_box(bboxes, im0, label=label, color=colors(label_color + 1, True), line_thickness=2)
 
+                        if tracking_id > 0 and tracking_id != id:
+                            im0 = de_identification(im0, bboxes[0], bboxes[1], bboxes[2], bboxes[3])
 
                         if save_txt:
                             # to MOT format
@@ -254,6 +258,8 @@ def detect(opt):
                 if k == ord('q'):   # q to quit
                     print("Exit")
                     exit()
+                elif k == ord('i'):
+                    tracking_id = int(input("Input Tracking ID(0 or less is Show All): "))
 
             # Save results (image with detections)
             if save_vid:
