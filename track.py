@@ -184,16 +184,22 @@ def detect(opt):
                 if len(outputs) > 0:
                     all_bboxes = [x[0:4] for x in outputs]
                     all_clss = [x[5] for x in outputs]
-                    pair_fp, will_remove_indexes = indexing_person_with_intersection(all_bboxes, all_clss)
+
+                    if opt.classes is None or (len(opt.classes) != 1):
+                        pair_fp, will_remove_indexes = indexing_person_with_intersection(all_bboxes, all_clss)
                     for j, (output, conf) in enumerate(zip(outputs, confs)): 
-                        if j in will_remove_indexes: continue  # apply iou
                         bboxes = output[0:4]
                         id = output[4]
                         cls = output[5]
+                        if ((opt.classes is None and cls == 2) or (opt.classes is not None and 2 not in opt.classes)) \
+                            and tracking_id_check(tracking_ids) and id not in tracking_ids:
+                            im0 = de_identification(im0, bboxes[0], bboxes[1], bboxes[2], bboxes[3])
+                        if opt.classes is None or (len(opt.classes) != 1):
+                            if j in will_remove_indexes: continue  # apply iou
 
                         c = int(cls)  # integer class
 
-                        if c == 2:  # class == 2 (person)
+                        if c == 2 and (opt.classes is None or (len(opt.classes) != 1)):  # class == 2 (person)
                             if j in pair_fp:
                                 face_label = names[pair_fp[j]]
                                 visualize_name = f'{face_label}, ' + names[c]
@@ -201,14 +207,16 @@ def detect(opt):
                                 label = None if hide_labels else (names[c] if hide_conf else f'{id} {visualize_name} {conf:.2f}')
                                 plot_one_box(bboxes, im0, label=label, color=colors(label_color + 1, True),
                                              line_thickness=2)
+                            elif opt.blur_nontracking:
+                                im0 = de_identification(im0, bboxes[0], bboxes[1], bboxes[2], bboxes[3])
                         else:
                             visualize_name = names[c]
                             label_color = c
                             label = None if hide_labels else (names[c] if hide_conf else f'{id} {visualize_name} {conf:.2f}')
                             plot_one_box(bboxes, im0, label=label, color=colors(label_color + 1, True), line_thickness=2)
 
-                        if tracking_id_check(tracking_ids) and id not in tracking_ids:
-                            im0 = de_identification(im0, bboxes[0], bboxes[1], bboxes[2], bboxes[3])
+                        # if tracking_id_check(tracking_ids) and id not in tracking_ids:
+                        #     im0 = de_identification(im0, bboxes[0], bboxes[1], bboxes[2], bboxes[3])
 
                         if save_txt:
                             # to MOT format
@@ -320,6 +328,7 @@ if __name__ == '__main__':
     parser.add_argument('--show-image-count', default=[-1, 0], nargs='+', type=int,
                         help='number of show image count and number of skip image count (-1 0 is show all)') # default 16, 22 modify
     parser.add_argument('--show-gt', action='store_true', help='visualize ground_truth')
+    parser.add_argument('--blur-nontracking', action='store_true', help='blur nontracking object')
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--gt-source', type=str, default=ground_truth_path, help='ground truth sources') # ground truth source
