@@ -191,8 +191,9 @@ def detect(opt):
                         bboxes = output[0:4]
                         id = output[4]
                         cls = output[5]
-                        if ((opt.classes is None and cls == 2) or (opt.classes is not None and 2 not in opt.classes)) \
-                            and tracking_id_check(tracking_ids) and id not in tracking_ids:
+                        if ((opt.classes is not None and len(opt.classes) <= 2 and 2 not in opt.classes) \
+                                or (opt.classes is not None and len(opt.classes) == 1 and 2 in opt.classes)) \
+                                and (tracking_id_check(tracking_ids) and id not in tracking_ids):
                             im0 = de_identification(im0, bboxes[0], bboxes[1], bboxes[2], bboxes[3])
                         if opt.classes is None or (len(opt.classes) != 1):
                             if j in will_remove_indexes: continue  # apply iou
@@ -207,6 +208,8 @@ def detect(opt):
                                 label = None if hide_labels else (names[c] if hide_conf else f'{id} {visualize_name} {conf:.2f}')
                                 plot_one_box(bboxes, im0, label=label, color=colors(label_color + 1, True),
                                              line_thickness=2)
+                                if tracking_id_check(tracking_ids) and id not in tracking_ids:
+                                    im0 = de_identification(im0, bboxes[0], bboxes[1], bboxes[2], bboxes[3])
                             elif opt.blur_nontracking:
                                 im0 = de_identification(im0, bboxes[0], bboxes[1], bboxes[2], bboxes[3])
                         else:

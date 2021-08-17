@@ -40,3 +40,4 @@ python track.py --conf-thres 0.5 --source https://www.youtube.com/watch?v=Ci47VF
 python track.py --conf-thres 0.7 --source https://www.youtube.com/watch?v=Pyx59BRQtOM --show-vid
 python track.py --conf-thres 0.7 --source https://www.youtube.com/watch?v=2H7ARbmTEqo --show-vid
 python track.py --conf-thres 0.7 --source https://www.youtube.com/watch?v=Pyx59BRQtOM --show-vid --blur-nontracking
+python track.py --conf-thres 0.7 --source https://www.youtube.com/watch?v=Pyx59BRQtOM --show-vid --classes 0 2 --blur-nontracking
