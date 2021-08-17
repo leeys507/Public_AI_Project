@@ -39,5 +39,5 @@ python track.py --conf-thres 0.5 --source https://www.youtube.com/watch?v=Ci47VF
 
 python track.py --conf-thres 0.7 --source https://www.youtube.com/watch?v=Pyx59BRQtOM --show-vid
 python track.py --conf-thres 0.7 --source https://www.youtube.com/watch?v=2H7ARbmTEqo --show-vid
-
+q
 python detect.py --conf-thres 0.6 --view-img --show-image-count 10 0 --imgset-dir test --weights ../../Desktop/weights/face_track/crowdhuman_yolov5m.pt

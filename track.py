@@ -201,15 +201,15 @@ def detect(opt):
                                 face_label = names[pair_fp[j]]
                                 visualize_name = f'{face_label}, ' + names[c]
                                 label_color = pair_fp[j]
-                            else:
-                                visualize_name = names[c]
-                                label_color = c
+                                label = None if hide_labels else (names[c] if hide_conf else f'{id} {visualize_name} {conf:.2f}')
+                                plot_one_box(bboxes, im0, label=label, color=colors(label_color + 1, True),
+                                             line_thickness=2)
                         else:
                             visualize_name = names[c]
                             label_color = c
+                            label = None if hide_labels else (names[c] if hide_conf else f'{id} {visualize_name} {conf:.2f}')
+                            plot_one_box(bboxes, im0, label=label, color=colors(label_color + 1, True), line_thickness=2)
 
-                        label = None if hide_labels else (names[c] if hide_conf else f'{id} {visualize_name} {conf:.2f}')
-                        plot_one_box(bboxes, im0, label=label, color=colors(label_color+1, True), line_thickness=2)
 
                         if save_txt:
                             # to MOT format
