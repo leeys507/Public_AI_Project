@@ -304,8 +304,6 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
                         show_info_in_title += "|show label and conf| "
                     elif not hide_labels and hide_conf:
                         show_info_in_title += "|show label| "
-                    else:
-                        show_info_in_title += "|show conf| "
                 
                 if show_gt and targets is not None:
                     for t in targets:
