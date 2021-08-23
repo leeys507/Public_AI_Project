@@ -29,3 +29,23 @@ save model in default_path/weights<br>
 |[YOLOv5x6][assets]     |1280 |**54.4** |**54.4** |**72.0** |22.4    |   |141.8 |222.9
 |                       |     |         |         |         |        |   |      |
 |[YOLOv5x6][assets] TTA |1280 |**55.0** |**55.0** |**72.0** |70.8    |   |-     |-
+<br>
+<br>
+
+### Inference
+```cmd
+python detect.py --conf-thres 0.6 --view-img --show-image-count 10 0 --imgset-dir test --show-gt --nosave
+```
+```cmd
+python detect.py --conf-thres 0.6 --source https://www.youtube.com/watch?v=Ci47VF0v1pE --view-img  --nosave --show-image-count -1 0
+```
+<br>
+<br>
+
+### Tracking
+```cmd
+python track.py --conf-thres 0.7 --source https://www.youtube.com/watch?v=Pyx59BRQtOM --show-vid
+```
+```cmd
+python track.py --conf-thres 0.7 --source https://www.youtube.com/watch?v=Pyx59BRQtOM --show-vid --classes 0 2 --blur-nontracking
+```
