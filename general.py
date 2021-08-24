@@ -1,0 +1,148 @@
+import torch
+# from torchtext.data import Field, TabularDataset, BucketIterator
+from torchtext.legacy.data import Field, TabularDataset, BucketIterator
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+
+def create_split_csv(raw_data_path=".", dest_path=".", 
+    train_csv_name="train.csv", valid_csv_name="valid.csv", test_csv_name="test.csv", 
+    skiprows=1, encoding="euc-kr", test_size=0.25, valid_size=0.25, random_seed=1):
+
+    # Read raw data
+    df_raw = pd.read_csv(raw_data_path, skiprows=skiprows, encoding=encoding)
+
+    # 빈 텍스트 행 제거
+    df_raw.drop( df_raw[df_raw.text.str.len() < 5].index, inplace=True)
+
+    df_raw = df_raw.dropna()
+
+    # Trim text and titletext to first_n_words
+    df_raw['text'] = df_raw['text'].apply(trim_string)
+
+    # Split according to label
+    df_hello = df_raw[df_raw['label'] == 0]
+    df_sorry = df_raw[df_raw['label'] == 1]
+    df_thank = df_raw[df_raw['label'] == 2]
+    # df_emergency = df_raw[df_raw['label'] == 3]
+    # df_weather = df_raw[df_raw['label'] == 4]
+
+    # Train-test split
+    df_hello_full_train, df_hello_test = train_test_split(df_hello, test_size = test_size, random_state = random_seed)
+    df_sorry_full_train, df_sorry_test = train_test_split(df_sorry, test_size = test_size, random_state = random_seed)
+    df_thank_full_train, df_thank_test = train_test_split(df_thank, test_size = test_size, random_state = random_seed)
+    # df_emergency_full_train, df_emergency_test = train_test_split(df_emergency, test_size = test_size, random_state = random_seed)
+    # df_weather_full_train, df_weather_test = train_test_split(df_weather, test_size = test_size, random_state = random_seed)
+
+    # Train-valid split
+    df_hello_train, df_hello_valid = train_test_split(df_hello_full_train, test_size = valid_size, random_state = random_seed)
+    df_sorry_train, df_sorry_valid = train_test_split(df_sorry_full_train, test_size = valid_size, random_state = random_seed)
+    df_thank_train, df_thank_valid = train_test_split(df_thank_full_train, test_size = valid_size, random_state = random_seed)
+    # df_emergency_train, df_emergenc_valid = train_test_split(df_emergenc_full_train, test_size = valid_size, random_state = random_seed)
+    # df_weather_train, df_weather_valid = train_test_split(df_weather_full_train, test_size = valid_size, random_state = random_seed)
+
+    # Concatenate splits of different labels
+    df_train = pd.concat([df_hello_train, df_sorry_train, df_thank_train], ignore_index=True, sort=False)
+    df_valid = pd.concat([df_hello_valid, df_sorry_valid, df_thank_valid], ignore_index=True, sort=False)
+    df_test = pd.concat([df_hello_test, df_sorry_test, df_thank_test], ignore_index=True, sort=False)
+
+    # df_train = pd.concat([df_hello_train, df_sorry_train, df_thank_train, df_emergency_train, df_weather_train], ignore_index=True, sort=False)
+    # df_valid = pd.concat([df_hello_valid, df_sorry_valid, df_thank_valid, df_emergenc_valid, df_weather_valid], ignore_index=True, sort=False)
+    # df_test = pd.concat([df_hello_test, df_sorry_test, df_thank_test, df_emergenc_test, df_weather_test], ignore_index=True, sort=False)
+
+    # Write preprocessed data
+    df_train.to_csv(dest_path + "/" + train_csv_name, index=False)
+    df_valid.to_csv(dest_path + "/" + valid_csv_name, index=False)
+    df_test.to_csv(dest_path + "/" + test_csv_name, index=False)
+
+
+def trim_string(x, first_n_words=200):
+    x = x.split(maxsplit=first_n_words)
+    x = ' '.join(x[:first_n_words])
+    return x
+
+
+# Fields
+def get_fields(tokenize=str.split):
+    label_field = Field(sequential=False, use_vocab=False, batch_first=True, dtype=torch.float)
+    text_field = Field(tokenize=tokenize, lower=True, include_lengths=True, batch_first=True)
+    fields = [('text', text_field), ('label', label_field)]
+
+    return label_field, text_field, fields
+
+def get_datasets(fields, source_path=".", train_csv="train.csv", valid_csv="valid.csv", test_csv="test.csv"):
+    # TabularDataset
+    train, valid, test = TabularDataset.splits(path=source_path, train=train_csv, validation=valid_csv, test=test_csv,
+                                            format='CSV', fields=fields, skip_header=True)
+    
+    return train, valid, test
+
+# Iterators
+def get_iterators(train_data, valid_data, test_data, device, train_batch_size=5, valid_batch_size=5, test_batch_size=5):
+    train_iter = BucketIterator(train_data, batch_size=train_batch_size, sort_key=lambda x: len(x.text),
+                            device=device, sort=True, sort_within_batch=True)
+    valid_iter = BucketIterator(valid_data, batch_size=valid_batch_size, sort_key=lambda x: len(x.text),
+                            device=device, sort=True, sort_within_batch=True)
+    test_iter = BucketIterator(test_data, batch_size=test_batch_size, sort_key=lambda x: len(x.text),
+                            device=device, sort=True, sort_within_batch=True)
+    
+    return train_iter, valid_iter, test_iter
+
+# Vocabulary
+def get_vocablulary(text_field, train_data, min_freq=1):
+    text_field.build_vocab(train_data, min_freq=min_freq)
+    return text_field
+
+
+# Save and Load Functions
+def save_checkpoint(save_path, model, optimizer, valid_loss):
+
+    if save_path == None:
+        return
+    
+    state_dict = {'model_state_dict': model.state_dict(),
+                  'optimizer_state_dict': optimizer.state_dict(),
+                  'valid_loss': valid_loss}
+    
+    torch.save(state_dict, save_path)
+    print(f'Model saved to ==> {save_path}')
+
+
+def load_checkpoint(load_path, model, optimizer, device):
+
+    if load_path==None:
+        return
+    
+    state_dict = torch.load(load_path, map_location=device)
+    print(f'Model loaded from <== {load_path}')
+    
+    model.load_state_dict(state_dict['model_state_dict'])
+    optimizer.load_state_dict(state_dict['optimizer_state_dict'])
+    
+    return state_dict['valid_loss']
+
+
+def save_metrics(save_path, train_loss_list, valid_loss_list, global_steps_list):
+
+    if save_path == None:
+        print("Required Save Path")
+        return
+    
+    state_dict = {'train_loss_list': train_loss_list,
+                  'valid_loss_list': valid_loss_list,
+                  'global_steps_list': global_steps_list}
+    
+    torch.save(state_dict, save_path)
+    print(f'Model saved to ==> {save_path}')
+
+
+def load_metrics(load_path, device):
+
+    if load_path==None:
+        return
+    
+    state_dict = torch.load(load_path, map_location=device)
+    print(f'Model loaded from <== {load_path}')
+    
+    return state_dict['train_loss_list'], state_dict['valid_loss_list'], state_dict['global_steps_list']
