@@ -21,6 +21,10 @@ def create_split_csv(raw_data_path=".", dest_path=".",
     # Trim text and titletext to first_n_words
     df_raw['text'] = df_raw['text'].apply(trim_string)
 
+    label_numbers = [0, 1, 2]
+
+    for ln in label_numbers:
+        pass
     # Split according to label
     df_hello = df_raw[df_raw['label'] == 0]
     df_sorry = df_raw[df_raw['label'] == 1]
@@ -65,11 +69,12 @@ def trim_string(x, first_n_words=200):
 
 # Fields
 def get_fields(tokenize=str.split):
-    label_field = Field(sequential=False, use_vocab=False, batch_first=True, dtype=torch.float)
+    label_field = Field(sequential=False, use_vocab=False, batch_first=True, dtype=torch.long)
     text_field = Field(tokenize=tokenize, lower=True, include_lengths=True, batch_first=True)
     fields = [('text', text_field), ('label', label_field)]
 
     return label_field, text_field, fields
+
 
 def get_datasets(fields, source_path=".", train_csv="train.csv", valid_csv="valid.csv", test_csv="test.csv"):
     # TabularDataset
@@ -77,6 +82,7 @@ def get_datasets(fields, source_path=".", train_csv="train.csv", valid_csv="vali
                                             format='CSV', fields=fields, skip_header=True)
     
     return train, valid, test
+
 
 # Iterators
 def get_iterators(train_data, valid_data, test_data, device, train_batch_size=5, valid_batch_size=5, test_batch_size=5):
@@ -88,6 +94,7 @@ def get_iterators(train_data, valid_data, test_data, device, train_batch_size=5,
                             device=device, sort=True, sort_within_batch=True)
     
     return train_iter, valid_iter, test_iter
+
 
 # Vocabulary
 def get_vocablulary(text_field, train_data, min_freq=1):

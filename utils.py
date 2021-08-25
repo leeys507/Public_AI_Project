@@ -1,3 +1,4 @@
+import os
 
 
 def colorstr(*input):
@@ -23,3 +24,11 @@ def colorstr(*input):
               'bold': '\033[1m',
               'underline': '\033[4m'}
     return ''.join(colors[x] for x in args) + f'{string}' + colors['end']
+
+
+def create_directory(dir_path):
+    try:
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+    except OSError:
+        print("Error: Failed to create the directory.")
