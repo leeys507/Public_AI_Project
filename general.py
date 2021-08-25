@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-def create_split_csv(raw_data_path=".", dest_path=".", 
+def create_split_csv(raw_data_path=".", dest_path=".", label_numbers=[0, 1, 2],
     train_csv_name="train.csv", valid_csv_name="valid.csv", test_csv_name="test.csv", 
     skiprows=1, encoding="euc-kr", test_size=0.25, valid_size=0.25, random_seed=1):
 
@@ -21,7 +21,6 @@ def create_split_csv(raw_data_path=".", dest_path=".",
     # Trim text and titletext to first_n_words
     df_raw['text'] = df_raw['text'].apply(trim_string)
 
-    label_numbers = [0, 1, 2]
     df_split_train = pd.DataFrame()
     df_split_valid = pd.DataFrame()
     df_split_test = pd.DataFrame()
@@ -41,9 +40,9 @@ def create_split_csv(raw_data_path=".", dest_path=".",
         df_split_test = pd.concat([df_split_test, df_test], ignore_index=True, sort=False)
 
     # Write preprocessed data
-    df_split_train.to_csv(dest_path + "/" + train_csv_name, index=False)
-    df_split_valid.to_csv(dest_path + "/" + valid_csv_name, index=False)
-    df_split_test.to_csv(dest_path + "/" + test_csv_name, index=False)
+    df_split_train.to_csv(dest_path + "/" + train_csv_name, index=False, encoding="utf-8")
+    df_split_valid.to_csv(dest_path + "/" + valid_csv_name, index=False, encoding="utf-8")
+    df_split_test.to_csv(dest_path + "/" + test_csv_name, index=False, encoding="utf-8")
 
 
 def trim_string(x, first_n_words=200):
@@ -59,6 +58,12 @@ def get_fields(tokenize=str.split):
     fields = [('text', text_field), ('label', label_field)]
 
     return label_field, text_field, fields
+
+
+def get_text_field(tokenize=str.split):
+    text_field = Field(tokenize=tokenize, lower=True, include_lengths=True, batch_first=True)
+
+    return text_field
 
 
 def get_datasets(fields, source_path=".", train_csv="train.csv", valid_csv="valid.csv", test_csv="test.csv"):

@@ -6,31 +6,33 @@ import numpy as np
 
 import torch
 import torch.optim as optim
-# Models
+
 import torch.nn as nn
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 # Evaluation
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
+from model import LSTM
 from utils import colorstr, create_directory
 from general import create_split_csv, get_fields, get_datasets, get_iterators, get_vocablulary,\
     save_checkpoint, save_metrics, load_checkpoint, load_metrics
 
+from eunjeon import Mecab
+
 def parse_opt():
     default_path = os.path.join(os.path.expanduser('~'), 'Desktop/') # Desktop
     weights_path = "weights/speech_text"
-    saved_pt = "model.pt"
+    save_pt = "model.pt"
 
     source_path = default_path + "ai_data/speech_text/csv_data/"
     source_name = "data.csv"
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights-save-path', type=str, default=default_path + weights_path, help='save model.pt path(s)')
-    parser.add_argument('--best-weight-save-name', type=str, default=saved_pt, help='save best weight name')
+    parser.add_argument('--best-weight-save-name', type=str, default=save_pt, help='save best weight name')
     parser.add_argument('--source-path', type=str, default=source_path, help='data source path')
     parser.add_argument('--source-name', type=str, default=source_name, help='source name')
-    parser.add_argument('--outputs-path', type=str, default=source_path, help='spkit data outputs path name')
+    parser.add_argument('--outputs-path', type=str, default=source_path, help='split data outputs path name')
     parser.add_argument('--train-data-save-name', type=str, default="train.csv", help='save train data name')
     parser.add_argument('--valid-data-save-name', type=str, default="valid.csv", help='save valid data name')
     parser.add_argument('--test-data-save-name', type=str, default="test.csv", help='save test data name')
@@ -52,41 +54,7 @@ def parse_opt():
     return opt
 
 
-class LSTM(nn.Module):
-
-    def __init__(self, text_field, class_num=3, dimension=128):
-        super(LSTM, self).__init__()
-
-        self.embedding = nn.Embedding(len(text_field.vocab), 300)
-        self.dimension = dimension
-        self.lstm = nn.LSTM(input_size=300,
-                            hidden_size=dimension,
-                            num_layers=1,
-                            batch_first=True,
-                            bidirectional=True)
-        self.drop = nn.Dropout(p=0.5)
-
-        self.fc = nn.Linear(2*dimension, class_num)
-
-    def forward(self, text, text_len):
-
-        text_emb = self.embedding(text)
-
-        packed_input = pack_padded_sequence(text_emb, text_len, batch_first=True, enforce_sorted=False)
-        packed_output, _ = self.lstm(packed_input)
-        output, _ = pad_packed_sequence(packed_output, batch_first=True)
-
-        out_forward = output[range(len(output)), text_len - 1, :self.dimension]
-        out_reverse = output[:, 0, self.dimension:]
-        out_reduced = torch.cat((out_forward, out_reverse), 1)
-        text_fea = self.drop(out_reduced)
-
-        text_out = self.fc(text_fea)
-        #text_out = torch.sigmoid(text_fea)
-
-        return text_out
-
-
+# Training Function
 def start_train(model,
         optimizer,
         train_loader, #train_iter
@@ -117,7 +85,7 @@ def start_train(model,
     log_file = open(log_path + loss_log_name, "w")
     log_file.write("Loss in Last Validation of Every Epoch\n\n")
 
-    # training loop -------------------------------------------------------------------------------------------------
+    # training loop --------------------------------------------------------------------------------------------------
     model.train()
 
     t0 = time.time()
@@ -137,7 +105,7 @@ def start_train(model,
             running_loss += loss.item()
             global_step += 1
 
-            # evaluation step
+            # validation step
             if global_step % eval_every == 0:
                 model.eval()
 
@@ -183,6 +151,7 @@ def start_train(model,
                     best_accuracy = total_acc/total_count
                     saving_best_model_path = weights_save_path + "/" + save_best_model_name
 
+                    save_checkpoint(saving_best_model_path, model, optimizer, best_valid_loss)
                     print("--" * 25)
                     print(f'Valid Accuracy: {best_accuracy:.4f}')
                     print(f"Saving Model(Path): {saving_best_model_path}")
@@ -202,11 +171,12 @@ def start_train(model,
     print(colorstr("Finished Training!\n"))
 
 
-    # Evaluation Function
-
-def evaluate(model, test_loader, device, cpu_device, threshold=0.5):
+# Evaluation Function
+def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, threshold=0.5):
     y_pred = []
     y_true = []
+    pred_ans = [0] * len(label_numbers)
+    true_cnts = [0] * len(label_numbers)
 
     model.eval()
     with torch.no_grad():
@@ -222,7 +192,16 @@ def evaluate(model, test_loader, device, cpu_device, threshold=0.5):
     
     print(colorstr("Classification Report:"))
     y_pred = np.argmax(y_pred, axis=1)
-    print(classification_report(y_true, y_pred, labels=[0, 1, 2], digits=4))
+    print(classification_report(y_true, y_pred, labels=label_numbers, digits=4))
+    
+    for pred, true in zip(y_pred, y_true):
+        true_cnts[true]+=1
+        if pred == true:
+            pred_ans[pred]+=1
+
+    for ln in label_numbers:
+        print(colorstr("green", f"Class [{classes[ln]}]:"), 
+            f"{pred_ans[ln]/true_cnts[ln]:.3f}", f"{pred_ans[ln]}/{true_cnts[ln]}")
     
     # cm = confusion_matrix(y_true, y_pred, labels=[1,0])
     # ax= plt.subplot()
@@ -243,16 +222,20 @@ def main(opt):
 
     #classes = ["hello", "sorry", "thank", "emergency", "weather"]
     classes = ["hello", "sorry", "thank"]
+    label_numbers = [0, 1, 2]
 
-    print(colorstr("red", "bold", 'Train: ') + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
+    if opt.test_only == False:
+        print(colorstr("red", "bold", "Train: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
+    # eunjeon mecab 한국어 형태소 분석
+    m = Mecab()
 
     # train, valid, test csv 생성
-    create_split_csv(opt.source_path + opt.source_name, opt.outputs_path, 
+    create_split_csv(opt.source_path + opt.source_name, opt.outputs_path, label_numbers,
         opt.train_data_save_name, opt.valid_data_save_name, opt.test_data_save_name, 
         test_size=opt.test_size, valid_size=opt.valid_size, random_seed=opt.random_seed)
 
     # data 전처리 정의, 형태소 분석
-    label_field, text_field, fields = get_fields()
+    label_field, text_field, fields = get_fields(m.morphs)
     
     # train, valid, test data 읽어 dataset 생성
     train_data, valid_data, test_data = get_datasets(fields=fields, source_path=opt.outputs_path, 
@@ -278,9 +261,9 @@ def main(opt):
         best_model = LSTM(text_field, class_num=len(classes)).to(device)
         optimizer = optim.Adam(best_model.parameters(), lr=opt.lr)
 
-        print(colorstr("red", "bold", 'Test: '))
+        print(colorstr("red", "bold", "Test: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
         load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, best_model, optimizer, device)
-        evaluate(best_model, test_iter, device, cpu_device, threshold=opt.test_threshold)
+        evaluate(best_model, test_iter, classes, label_numbers, device, cpu_device, threshold=opt.test_threshold)
 
 
 if __name__ == "__main__":

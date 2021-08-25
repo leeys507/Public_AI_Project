@@ -1,2 +1,10 @@
+/////////// Training
 python train.py --test
+
+
+/////////// Test
 python train.py --test-only
+
+
+/////////// Inference
+python prediction.py
