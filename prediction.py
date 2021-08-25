@@ -6,11 +6,14 @@ import torch
 import torch.optim as optim
 
 from torchtext.legacy.data import Field, TabularDataset, BucketIterator
+from torchtext.legacy.data.field import ReversibleField
 
 from model import LSTM
 from utils import colorstr
-from general import create_split_csv, get_fields, get_datasets, get_iterators, get_text_field, get_vocablulary,\
+from general import create_split_csv, get_fields, get_datasets, get_iterators, get_reverse_vocablulary_and_iter, get_text_field, get_vocablulary,\
     save_checkpoint, save_metrics, load_checkpoint, load_metrics
+
+from eunjeon import Mecab
 
 def parse_opt():
     default_path = os.path.join(os.path.expanduser('~'), 'Desktop/') # Desktop
@@ -52,7 +55,8 @@ def main(opt):
 
     print(colorstr("red", "bold", "Prediction: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
 
-    text_field = get_text_field()
+    m = Mecab()
+    text_field = get_text_field(m.morphs)
     fields = [('text', text_field)]
 
     pred_data = TabularDataset(path=opt.source_path + opt.source_name, format='CSV', fields=fields, skip_header=True)
@@ -62,11 +66,19 @@ def main(opt):
 
     text_field = get_vocablulary(text_field, pred_data, opt.word_min_freq)
 
+    rev_field, rev_pred_iter = get_reverse_vocablulary_and_iter(opt.source_path + opt.source_name, m.morphs, 
+                                device, opt.batch_size, opt.word_min_freq)
+    
+    for (text, text_len), _ in rev_pred_iter:
+        print(text)
+        print(rev_field.reverse(text))
+    exit()
+
     model = LSTM(text_field, class_num=len(classes)).to(device)
     optimizer = optim.Adam(model.parameters())
 
     load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, model, optimizer, device)
-    prediction(model, pred_iter, device, cpu_device, threshold=opt.test_threshold)
+    prediction(model, pred_iter, device, cpu_device, threshold=opt.threshold)
 
 if __name__ == "__main__":
     opt = parse_opt()

@@ -74,7 +74,6 @@ def start_train(model,
     
     # initialize running values
     running_loss = 0.0
-    valid_running_loss = 0.0
     global_step = 0
     train_loss_list = []
     valid_loss_list = []
@@ -90,7 +89,7 @@ def start_train(model,
 
     t0 = time.time()
     for epoch in range(num_epochs):
-        for ((text, text_len), labels), _ in train_loader:           
+        for ((text, text_len), labels), _ in train_loader:     
             labels = labels.to(device)
             text = text.to(device)
             text_len = text_len.to(cpu_device)
@@ -107,33 +106,14 @@ def start_train(model,
 
             # validation step
             if global_step % eval_every == 0:
-                model.eval()
-
-                total_acc, total_count = 0, 0
-                with torch.no_grad():                    
-                    # validation loop
-                    for ((text, text_len), labels), _ in valid_loader:
-                        labels = labels.to(device)
-                        text = text.to(device)
-                        text_len = text_len.to(cpu_device)
-                        output = model(text, text_len)
-
-                        loss = criterion(output, labels)
-                        valid_running_loss += loss.item()
-
-                        total_acc += (output.argmax(1) == labels).sum().item()
-                        total_count += labels.size(0)
-
-                # evaluation
-                average_train_loss = running_loss / eval_every
-                average_valid_loss = valid_running_loss / len(valid_loader)
-                train_loss_list.append(average_train_loss)
-                valid_loss_list.append(average_valid_loss)
-                global_steps_list.append(global_step)
+                # validation
+                average_train_loss, average_valid_loss, total_acc, total_count = \
+                validate(model, valid_loader, criterion, eval_every, 
+                train_loss_list, valid_loss_list, global_steps_list, global_step, 
+                running_loss, device, cpu_device)
 
                 # resetting running values
                 running_loss = 0.0                
-                valid_running_loss = 0.0
                 model.train()
 
                 # print progress
@@ -171,6 +151,39 @@ def start_train(model,
     print(colorstr("Finished Training!\n"))
 
 
+# Validation Function
+def validate(model, valid_loader, criterion, eval_every, 
+    train_loss_list, valid_loss_list, global_steps_list, global_step, running_loss, device, cpu_device):
+    
+    model.eval()
+
+    valid_running_loss = 0.0
+    total_acc, total_count = 0, 0
+
+    with torch.no_grad():                    
+        # validation loop
+        for ((text, text_len), labels), _ in valid_loader:
+            labels = labels.to(device)
+            text = text.to(device)
+            text_len = text_len.to(cpu_device)
+            output = model(text, text_len)
+
+            loss = criterion(output, labels)
+            valid_running_loss += loss.item()
+
+            total_acc += (output.argmax(1) == labels).sum().item()
+            total_count += labels.size(0)
+
+    # evaluation
+    average_train_loss = running_loss / eval_every
+    average_valid_loss = valid_running_loss / len(valid_loader)
+    train_loss_list.append(average_train_loss)
+    valid_loss_list.append(average_valid_loss)
+    global_steps_list.append(global_step)
+
+    return average_train_loss, average_valid_loss, total_acc, total_count
+
+
 # Evaluation Function
 def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, threshold=0.5):
     y_pred = []
@@ -180,7 +193,7 @@ def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, thr
 
     model.eval()
     with torch.no_grad():
-        for ((text, text_len), labels), _ in test_loader:           
+        for ((text, text_len), labels), _ in test_loader:
             labels = labels.to(device)
             text = text.to(device)
             text_len = text_len.to(cpu_device)
@@ -201,7 +214,7 @@ def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, thr
 
     for ln in label_numbers:
         print(colorstr("green", f"Class [{classes[ln]}]:"), 
-            f"{pred_ans[ln]/true_cnts[ln]:.3f}", f"({pred_ans[ln]}/{true_cnts[ln]})")
+            f"{pred_ans[ln]/true_cnts[ln]:.4f}", f"({pred_ans[ln]}/{true_cnts[ln]})")
     
     # cm = confusion_matrix(y_true, y_pred, labels=[1,0])
     # ax= plt.subplot()

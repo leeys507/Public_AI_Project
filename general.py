@@ -1,6 +1,6 @@
 import torch
 # from torchtext.data import Field, TabularDataset, BucketIterator
-from torchtext.legacy.data import Field, TabularDataset, BucketIterator
+from torchtext.legacy.data import Field, TabularDataset, BucketIterator, ReversibleField
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -90,6 +90,19 @@ def get_iterators(train_data, valid_data, test_data, device, train_batch_size=5,
 def get_vocablulary(text_field, train_data, min_freq=1):
     text_field.build_vocab(train_data, min_freq=min_freq)
     return text_field
+
+
+def get_reverse_vocablulary_and_iter(source_path, tokenize, device, batch_size, word_min_freq):
+    rev_field = ReversibleField(tokenize=tokenize, lower=True, include_lengths=True, batch_first=True)
+    rev_fields = [('text', rev_field)]
+
+    rev_pred_data = TabularDataset(path=source_path, format='CSV', fields=rev_fields, skip_header=True)
+
+    rev_pred_iter = BucketIterator(rev_pred_data, batch_size=batch_size, sort_key=lambda x: len(x.text),
+            device=device, sort=True, sort_within_batch=True)
+    rev_field.build_vocab(rev_pred_data, min_freq=word_min_freq)
+
+    return rev_field, rev_pred_iter
 
 
 # Save and Load Functions
