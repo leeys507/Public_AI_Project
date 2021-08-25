@@ -115,9 +115,9 @@ def start_train(model,
 
     create_directory(log_path)
     log_file = open(log_path + loss_log_name, "w")
-    log_file.write("Loss in Last Validation of Every Epoch\n")
+    log_file.write("Loss in Last Validation of Every Epoch\n\n")
 
-    # training loop
+    # training loop -------------------------------------------------------------------------------------------------
     model.train()
 
     t0 = time.time()
@@ -191,15 +191,15 @@ def start_train(model,
         log_file.write(f"Epoch {epoch} | Avg Train Loss: {average_train_loss:.4f} | Avg Valid Loss: {average_valid_loss:.4f}\n")
 
     log_file.close()
-    # train loop end -------------------------------------------------------------------------------------------------
+    # training loop end ----------------------------------------------------------------------------------------------
     
     save_checkpoint(weights_save_path + '/last.pt', model, optimizer, best_valid_loss)
     save_metrics(weights_save_path + '/metrics.pt', train_loss_list, valid_loss_list, global_steps_list)
 
     total_time = time.time() - t0
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-    print("Total Traing Time:", f"{total_time_str}")
-    print('Finished Training!')
+    print("\nTotal Training Time:", f"{total_time_str}")
+    print(colorstr("Finished Training!"))
 
 
     # Evaluation Function
