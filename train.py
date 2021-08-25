@@ -201,7 +201,7 @@ def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, thr
 
     for ln in label_numbers:
         print(colorstr("green", f"Class [{classes[ln]}]:"), 
-            f"{pred_ans[ln]/true_cnts[ln]:.3f}", f"{pred_ans[ln]}/{true_cnts[ln]}")
+            f"{pred_ans[ln]/true_cnts[ln]:.3f}", f"({pred_ans[ln]}/{true_cnts[ln]})")
     
     # cm = confusion_matrix(y_true, y_pred, labels=[1,0])
     # ax= plt.subplot()
