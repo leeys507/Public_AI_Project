@@ -199,7 +199,7 @@ def start_train(model,
     total_time = time.time() - t0
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print("\nTotal Training Time:", f"{total_time_str}")
-    print(colorstr("Finished Training!"))
+    print(colorstr("Finished Training!\n"))
 
 
     # Evaluation Function
@@ -244,7 +244,7 @@ def main(opt):
     #classes = ["hello", "sorry", "thank", "emergency", "weather"]
     classes = ["hello", "sorry", "thank"]
 
-    print(colorstr("red", "bold", 'train: ') + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
+    print(colorstr("red", "bold", 'Train: ') + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
 
     # train, valid, test csv 생성
     create_split_csv(opt.source_path + opt.source_name, opt.outputs_path, 
@@ -278,6 +278,7 @@ def main(opt):
         best_model = LSTM(text_field, class_num=len(classes)).to(device)
         optimizer = optim.Adam(best_model.parameters(), lr=opt.lr)
 
+        print(colorstr("red", "bold", 'Test: '))
         load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, best_model, optimizer, device)
         evaluate(best_model, test_iter, device, cpu_device, threshold=opt.test_threshold)
 
