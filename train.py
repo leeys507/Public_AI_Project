@@ -188,7 +188,7 @@ def start_train(model,
                     print(f"Saving Model(Path): {saving_best_model_path}")
                     print("--" * 25)
         # one epoch end ----------------------------------------------------------------------------------------------
-        log_file.write(f"Epoch {epoch} | Avg Train Loss: {average_train_loss:.4f} | Avg Valid Loss: {average_valid_loss:.4f}")
+        log_file.write(f"Epoch {epoch} | Avg Train Loss: {average_train_loss:.4f} | Avg Valid Loss: {average_valid_loss:.4f}\n")
 
     log_file.close()
     # train loop end -------------------------------------------------------------------------------------------------

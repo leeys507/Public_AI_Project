@@ -22,43 +22,28 @@ def create_split_csv(raw_data_path=".", dest_path=".",
     df_raw['text'] = df_raw['text'].apply(trim_string)
 
     label_numbers = [0, 1, 2]
+    df_split_train = pd.DataFrame()
+    df_split_valid = pd.DataFrame()
+    df_split_test = pd.DataFrame()
 
     for ln in label_numbers:
-        pass
-    # Split according to label
-    df_hello = df_raw[df_raw['label'] == 0]
-    df_sorry = df_raw[df_raw['label'] == 1]
-    df_thank = df_raw[df_raw['label'] == 2]
-    # df_emergency = df_raw[df_raw['label'] == 3]
-    # df_weather = df_raw[df_raw['label'] == 4]
+        # Split according to label
+        df_label = df_raw[df_raw['label'] == ln]
 
-    # Train-test split
-    df_hello_full_train, df_hello_test = train_test_split(df_hello, test_size = test_size, random_state = random_seed)
-    df_sorry_full_train, df_sorry_test = train_test_split(df_sorry, test_size = test_size, random_state = random_seed)
-    df_thank_full_train, df_thank_test = train_test_split(df_thank, test_size = test_size, random_state = random_seed)
-    # df_emergency_full_train, df_emergency_test = train_test_split(df_emergency, test_size = test_size, random_state = random_seed)
-    # df_weather_full_train, df_weather_test = train_test_split(df_weather, test_size = test_size, random_state = random_seed)
+        # Train-test split
+        df_full_train, df_test = train_test_split(df_label, test_size = test_size, random_state = random_seed)
+        # Train-valid split
+        df_train, df_valid = train_test_split(df_full_train, test_size = valid_size, random_state = random_seed)
 
-    # Train-valid split
-    df_hello_train, df_hello_valid = train_test_split(df_hello_full_train, test_size = valid_size, random_state = random_seed)
-    df_sorry_train, df_sorry_valid = train_test_split(df_sorry_full_train, test_size = valid_size, random_state = random_seed)
-    df_thank_train, df_thank_valid = train_test_split(df_thank_full_train, test_size = valid_size, random_state = random_seed)
-    # df_emergency_train, df_emergenc_valid = train_test_split(df_emergenc_full_train, test_size = valid_size, random_state = random_seed)
-    # df_weather_train, df_weather_valid = train_test_split(df_weather_full_train, test_size = valid_size, random_state = random_seed)
-
-    # Concatenate splits of different labels
-    df_train = pd.concat([df_hello_train, df_sorry_train, df_thank_train], ignore_index=True, sort=False)
-    df_valid = pd.concat([df_hello_valid, df_sorry_valid, df_thank_valid], ignore_index=True, sort=False)
-    df_test = pd.concat([df_hello_test, df_sorry_test, df_thank_test], ignore_index=True, sort=False)
-
-    # df_train = pd.concat([df_hello_train, df_sorry_train, df_thank_train, df_emergency_train, df_weather_train], ignore_index=True, sort=False)
-    # df_valid = pd.concat([df_hello_valid, df_sorry_valid, df_thank_valid, df_emergenc_valid, df_weather_valid], ignore_index=True, sort=False)
-    # df_test = pd.concat([df_hello_test, df_sorry_test, df_thank_test, df_emergenc_test, df_weather_test], ignore_index=True, sort=False)
+        # Concatenate splits of different labels
+        df_split_train = pd.concat([df_split_train, df_train], ignore_index=True, sort=False)
+        df_split_valid = pd.concat([df_split_valid, df_valid], ignore_index=True, sort=False)
+        df_split_test = pd.concat([df_split_test, df_test], ignore_index=True, sort=False)
 
     # Write preprocessed data
-    df_train.to_csv(dest_path + "/" + train_csv_name, index=False)
-    df_valid.to_csv(dest_path + "/" + valid_csv_name, index=False)
-    df_test.to_csv(dest_path + "/" + test_csv_name, index=False)
+    df_split_train.to_csv(dest_path + "/" + train_csv_name, index=False)
+    df_split_valid.to_csv(dest_path + "/" + valid_csv_name, index=False)
+    df_split_test.to_csv(dest_path + "/" + test_csv_name, index=False)
 
 
 def trim_string(x, first_n_words=200):
