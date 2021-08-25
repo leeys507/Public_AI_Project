@@ -69,10 +69,12 @@ def main(opt):
     rev_field, rev_pred_iter = get_reverse_vocablulary_and_iter(opt.source_path + opt.source_name, m.morphs, 
                                 device, opt.batch_size, opt.word_min_freq)
     
-    for (text, text_len), _ in rev_pred_iter:
-        print(text)
-        print(rev_field.reverse(text))
-    exit()
+    # for (texts, text_len), _ in rev_pred_iter:
+    #     for text in texts:
+    #         for t in range(len(text)):
+    #             print(rev_field.reverse(text[t].unsqueeze(0).unsqueeze(0)))
+    #         print("--" * 20)
+    # exit()
 
     model = LSTM(text_field, class_num=len(classes)).to(device)
     optimizer = optim.Adam(model.parameters())
