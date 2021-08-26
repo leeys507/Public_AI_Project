@@ -31,7 +31,7 @@ def parse_opt():
     parser.add_argument('--model-name', type=str, default="LSTM", help='select model')
     parser.add_argument('--random-seed', type=int, default=1, help='random seed')
     parser.add_argument('--threshold', type=float, default=0.5, help='threshold')
-    parser.add_argument('--batch-size', type=int, default=1, help='batch size')
+    parser.add_argument('--batch-size', type=int, default=2, help='batch size')
     parser.add_argument('--word-min-freq', type=int, default=1, help='voca word min frequency')
     parser.add_argument('--emb-dim', type=int, default=300, help='embedding size')
     parser.add_argument('--out-channel', type=int, default=100, help='out channel size')
@@ -41,12 +41,15 @@ def parse_opt():
 
 
 def prediction(model, pred_iter, device, cpu_device, rev_field, rev_pred_iter, threshold=0.5):
+    origin_text = ""
     with torch.no_grad():                    
         # get text
         for (text, text_len), _ in pred_iter:
             for tt in text:
                 for t in range(len(tt)):
-                    print(rev_field.reverse(tt[t].unsqueeze(0).unsqueeze(0)))
+                    origin_text += rev_field.reverse(tt[t].unsqueeze(0).unsqueeze(0))[0]
+                print(origin_text)
+                origin_text = ""
             text = text.to(device)
             text_len = text_len.to(cpu_device)
             output = model(text, text_len)
