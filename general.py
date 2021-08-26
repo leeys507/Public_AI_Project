@@ -159,7 +159,7 @@ def load_pretrained_weights(load_path, device):
         return
     
     state_dict = torch.load(load_path, map_location=device)
-    print(f'Model loaded from <== {load_path}')
+    print(f'Pretrained weights loaded from <== {load_path}')
 
     vocab = state_dict["vocab"]
     weight = state_dict["embedding"].weight

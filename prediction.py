@@ -22,7 +22,7 @@ def parse_opt():
     save_pt = "model.pt"
 
     source_path = default_path + "ai_data/speech_text/csv_data/"
-    source_name = "pred_data_o.csv"
+    source_name = "pred_data.csv"
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights-save-path', type=str, default=default_path + weights_path, help='save model.pt path(s)')
