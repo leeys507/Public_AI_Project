@@ -100,6 +100,7 @@ def get_reverse_vocablulary_and_iter(source_path, tokenize, device, batch_size, 
 
     rev_pred_iter = BucketIterator(rev_pred_data, batch_size=batch_size, sort_key=lambda x: len(x.text),
             device=device, sort=True, sort_within_batch=True)
+
     rev_field.build_vocab(rev_pred_data, min_freq=word_min_freq)
 
     return rev_field, rev_pred_iter
@@ -109,10 +110,13 @@ def get_reverse_vocablulary_and_iter(source_path, tokenize, device, batch_size, 
 def save_checkpoint(save_path, model, optimizer, valid_loss):
 
     if save_path == None:
+        print("Required Save Path")
         return
     
     state_dict = {'model_state_dict': model.state_dict(),
                     'embedding': model.embedding,
+                    'vocab': model.vocab,
+                    'vocab_size': model.vocab_size,
                     'optimizer_state_dict': optimizer.state_dict(),
                     'valid_loss': valid_loss}
     
@@ -120,19 +124,47 @@ def save_checkpoint(save_path, model, optimizer, valid_loss):
     print(f'Model saved to ==> {save_path}')
 
 
-def load_checkpoint(load_path, model, optimizer, device, strict=True):
+def predict_sentence(model, vocab, sentence, tokenize, device, cpu_device="cpu"):
+    tokenized = [w for w in tokenize(sentence)]
+    indexed = [vocab.stoi[t] for t in tokenized]
+    length = [len(indexed)]
+    tensor = torch.LongTensor(indexed).to(device)
+    tensor = tensor.unsqueeze(1).T
+    length_tensor = torch.LongTensor(length).to(cpu_device)
+    prediction = model(tensor, length_tensor)
+    return prediction
+
+
+def load_checkpoint(load_path, model, device, optimizer=None, strict=True):
 
     if load_path==None:
+        print("Required Load Path")
         return
     
     state_dict = torch.load(load_path, map_location=device)
     print(f'Model loaded from <== {load_path}')
     
-    model.embedding = state_dict['embedding']
     model.load_state_dict(state_dict['model_state_dict'], strict=strict)
-    optimizer.load_state_dict(state_dict['optimizer_state_dict'])
+
+    if optimizer is not None:
+        optimizer.load_state_dict(state_dict['optimizer_state_dict'])
     
     return state_dict['valid_loss']
+
+
+def load_pretrained_weights(load_path, device):
+
+    if load_path==None:
+        print("Required Load Path")
+        return
+    
+    state_dict = torch.load(load_path, map_location=device)
+    print(f'Model loaded from <== {load_path}')
+
+    vocab = state_dict["vocab"]
+    weight = state_dict["embedding"].weight
+    
+    return vocab, weight
 
 
 def save_metrics(save_path, train_loss_list, valid_loss_list, global_steps_list):
@@ -152,6 +184,7 @@ def save_metrics(save_path, train_loss_list, valid_loss_list, global_steps_list)
 def load_metrics(load_path, device):
 
     if load_path==None:
+        print("Required Load Path")
         return
     
     state_dict = torch.load(load_path, map_location=device)

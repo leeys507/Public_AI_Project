@@ -261,12 +261,13 @@ def main(opt):
         device, opt.train_batch_size, opt.valid_batch_size, opt.test_batch_size)
 
     # vocablulary 생성, 단어 정수 mapping
+    #text_field.build_vocab(train_data, vectors=vv, min_freq=opt.word_min_freq)
     text_field = get_vocablulary(text_field, train_data, opt.word_min_freq)
 
     # use model list
     model_list = {
-        "LSTM": LSTM(len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim).to(device),
-        "CNN1d": CNN1d(len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device)
+        "LSTM": LSTM(text_field.vocab, len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim).to(device),
+        "CNN1d": CNN1d(text_field.vocab, len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device)
     }
 
     if opt.test_only == False:
@@ -283,7 +284,7 @@ def main(opt):
         optimizer = optim.Adam(best_model.parameters(), lr=opt.lr)
 
         print(colorstr("red", "bold", "Test: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
-        load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, best_model, optimizer, device, strict=False)
+        load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, best_model, device, optimizer=optimizer, strict=False)
         evaluate(best_model, test_iter, classes, label_numbers, device, cpu_device, threshold=opt.test_threshold)
 
 

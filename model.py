@@ -4,19 +4,21 @@ from numpy import dtype
 # Models
 import torch
 import torch.nn as nn
+from torch.nn.functional import embedding
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
 class LSTM(nn.Module):
-    def __init__(self, vocab_size, class_num=3, dimension=128, embed_dim=300, use_embed=False, pre_embed=None):
+    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=300, use_embed=False, pre_embed=None):
         super(LSTM, self).__init__()
 
+        self.vocab = vocab
         self.vocab_size = vocab_size
         self.embedding = nn.Embedding(vocab_size, embed_dim)
         self.dimension = dimension
 
-        # if use_embed and pre_embed is not None:
-        #     self.embedding.weight.data.copy_(torch.from_numpy(pre_embed))
+        if use_embed and pre_embed is not None:
+            self.embedding.weight.data.copy_(torch.from_numpy(pre_embed))
         
         self.lstm = nn.LSTM(input_size=embed_dim,
                             hidden_size=dimension,
@@ -48,10 +50,12 @@ class LSTM(nn.Module):
 
 
 class CNN1d(nn.Module):
-    def __init__(self, vocab_size, embed_dim=300, n_filters=100, class_num=3, dropout=0.25, filter_sizes=[1]):
+    def __init__(self, vocab, vocab_size, embed_dim=300, n_filters=100, class_num=3, dropout=0.25, filter_sizes=[1]):
         
         super().__init__()
         
+        self.vocab = vocab
+        self.vocab_size = vocab_size
         self.embedding = nn.Embedding(vocab_size, embed_dim)
         
         self.convs = nn.ModuleList([
