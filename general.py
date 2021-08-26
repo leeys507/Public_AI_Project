@@ -75,7 +75,9 @@ def get_datasets(fields, source_path=".", train_csv="train.csv", valid_csv="vali
 
 
 # Iterators
-def get_iterators(train_data, valid_data, test_data, device, train_batch_size=5, valid_batch_size=5, test_batch_size=5):
+def get_iterators(train_data, valid_data, test_data, device,
+        train_batch_size=5, valid_batch_size=5, test_batch_size=5):
+
     train_iter = BucketIterator(train_data, batch_size=train_batch_size, sort_key=lambda x: len(x.text),
                             device=device, sort=True, sort_within_batch=True)
     valid_iter = BucketIterator(valid_data, batch_size=valid_batch_size, sort_key=lambda x: len(x.text),

@@ -36,6 +36,7 @@ def parse_opt():
     parser.add_argument('--word-min-freq', type=int, default=1, help='voca word min frequency')
     parser.add_argument('--emb-dim', type=int, default=300, help='embedding size')
     parser.add_argument('--out-channel', type=int, default=100, help='out channel size')
+    parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
 
     opt = parser.parse_args()
     return opt
@@ -87,7 +88,7 @@ def main(opt):
     pred_data = TabularDataset(path=opt.source_path + opt.source_name, format='CSV', fields=fields, skip_header=True)
 
     pred_iter = BucketIterator(pred_data, batch_size=opt.batch_size, sort_key=lambda x: len(x.text),
-            device=device, sort=True, sort_within_batch=True)
+            device=device, sort=False, sort_within_batch=False, shuffle=opt.shuffle_data)
 
     text_field = get_vocablulary(text_field, pred_data, min_freq=opt.word_min_freq)
 

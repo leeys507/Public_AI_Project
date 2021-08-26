@@ -49,6 +49,7 @@ def parse_opt():
     parser.add_argument('--out-channel', type=int, default=100, help='out channel size')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
     parser.add_argument('--eval-every', type=int, default=3, help='train every evaluation')
+    parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
     parser.add_argument('--test', action='store_true', help='test after training')
     parser.add_argument('--test-only', action='store_true', help='test only')
     parser.add_argument('--test-threshold', type=float, default=0.5, help='test threshold')

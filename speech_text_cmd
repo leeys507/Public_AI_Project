@@ -1,6 +1,7 @@
 /////////// Training
 python train.py --test
 python train.py --test --model-name CNN1d
+python train.py --test --shuffle-data
 
 
 /////////// Test
@@ -9,3 +10,4 @@ python train.py --test-only
 
 /////////// Inference
 python prediction.py
+python prediction.py --shuffle-data
