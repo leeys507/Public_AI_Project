@@ -87,7 +87,7 @@ def get_iterators(train_data, valid_data, test_data, device, train_batch_size=5,
 
 
 # Vocabulary
-def get_vocablulary(text_field, train_data, min_freq=1):
+def get_vocablulary(text_field, train_data, min_freq=2):
     text_field.build_vocab(train_data, min_freq=min_freq)
     return text_field
 
@@ -112,14 +112,15 @@ def save_checkpoint(save_path, model, optimizer, valid_loss):
         return
     
     state_dict = {'model_state_dict': model.state_dict(),
-                  'optimizer_state_dict': optimizer.state_dict(),
-                  'valid_loss': valid_loss}
+                    'embedding': model.embedding,
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'valid_loss': valid_loss}
     
     torch.save(state_dict, save_path)
     print(f'Model saved to ==> {save_path}')
 
 
-def load_checkpoint(load_path, model, optimizer, device):
+def load_checkpoint(load_path, model, optimizer, device, strict=True):
 
     if load_path==None:
         return
@@ -127,7 +128,8 @@ def load_checkpoint(load_path, model, optimizer, device):
     state_dict = torch.load(load_path, map_location=device)
     print(f'Model loaded from <== {load_path}')
     
-    model.load_state_dict(state_dict['model_state_dict'])
+    model.embedding = state_dict['embedding']
+    model.load_state_dict(state_dict['model_state_dict'], strict=strict)
     optimizer.load_state_dict(state_dict['optimizer_state_dict'])
     
     return state_dict['valid_loss']

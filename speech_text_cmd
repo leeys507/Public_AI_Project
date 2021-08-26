@@ -1,5 +1,6 @@
 /////////// Training
 python train.py --test
+python train.py --test --model-name CNN1d
 
 
 /////////// Test

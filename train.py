@@ -12,7 +12,7 @@ import torch.nn as nn
 # Evaluation
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-from model import LSTM
+from model import LSTM, CNN1d
 from utils import colorstr, create_directory
 from general import create_split_csv, get_fields, get_datasets, get_iterators, get_vocablulary,\
     save_checkpoint, save_metrics, load_checkpoint, load_metrics
@@ -32,6 +32,7 @@ def parse_opt():
     parser.add_argument('--best-weight-save-name', type=str, default=save_pt, help='save best weight name')
     parser.add_argument('--source-path', type=str, default=source_path, help='data source path')
     parser.add_argument('--source-name', type=str, default=source_name, help='source name')
+    parser.add_argument('--model-name', type=str, default="LSTM", help='select model')
     parser.add_argument('--outputs-path', type=str, default=source_path, help='split data outputs path name')
     parser.add_argument('--train-data-save-name', type=str, default="train.csv", help='save train data name')
     parser.add_argument('--valid-data-save-name', type=str, default="valid.csv", help='save valid data name')
@@ -42,8 +43,10 @@ def parse_opt():
     parser.add_argument('--train-batch-size', type=int, default=5, help='train loader batch size')
     parser.add_argument('--valid-batch-size', type=int, default=5, help='valid loader batch size')
     parser.add_argument('--test-batch-size', type=int, default=5, help='test loader batch size')
-    parser.add_argument('--word-min-freq', type=int, default=1, help='voca word min frequency')
+    parser.add_argument('--word-min-freq', type=int, default=2, help='voca word min frequency')
     parser.add_argument('--epochs', type=int, default=50, help='train epochs')
+    parser.add_argument('--emb-dim', type=int, default=300, help='embedding size')
+    parser.add_argument('--out-channel', type=int, default=100, help='out channel size')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
     parser.add_argument('--eval-every', type=int, default=3, help='train every evaluation')
     parser.add_argument('--test', action='store_true', help='test after training')
@@ -86,10 +89,9 @@ def start_train(model,
 
     # training loop --------------------------------------------------------------------------------------------------
     model.train()
-
     t0 = time.time()
     for epoch in range(num_epochs):
-        for ((text, text_len), labels), _ in train_loader:     
+        for ((text, text_len), labels), _ in train_loader:  
             labels = labels.to(device)
             text = text.to(device)
             text_len = text_len.to(cpu_device)
@@ -261,9 +263,15 @@ def main(opt):
     # vocablulary 생성, 단어 정수 mapping
     text_field = get_vocablulary(text_field, train_data, opt.word_min_freq)
 
+    # use model list
+    model_list = {
+        "LSTM": LSTM(len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim).to(device),
+        "CNN1d": CNN1d(len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device)
+    }
+
     if opt.test_only == False:
         # model
-        model = LSTM(text_field, class_num=len(classes)).to(device)
+        model = model_list[opt.model_name]
         optimizer = optim.Adam(model.parameters(), lr=opt.lr)
 
         start_train(model, optimizer, train_iter, valid_iter, device, cpu_device, 
@@ -271,11 +279,11 @@ def main(opt):
             weights_save_path=opt.weights_save_path, save_best_model_name=opt.best_weight_save_name)
     
     if opt.test_only or opt.test:
-        best_model = LSTM(text_field, class_num=len(classes)).to(device)
+        best_model = model_list[opt.model_name]
         optimizer = optim.Adam(best_model.parameters(), lr=opt.lr)
 
         print(colorstr("red", "bold", "Test: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
-        load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, best_model, optimizer, device)
+        load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, best_model, optimizer, device, strict=False)
         evaluate(best_model, test_iter, classes, label_numbers, device, cpu_device, threshold=opt.test_threshold)
 
 
