@@ -26,9 +26,9 @@ for txtFile in txtFiles:
                        "n"]             # nope?
         label = "999"
         while not(label in validLabels):
-            print(">>>" + line)
-            label = input("0:hello 1:sorry 2:thank 3:emergency 4:weather,\n"
-                          "5:favor 6:buy 7:negate 8:season n:none. which? ")
+            print("\n>>>" + line)
+            label = input("0:인사 1:죄송 2:감사 3:비상 4:날씨,\n"
+                          "5:부탁 6:구입 7:거절 8:계절 n:none. which? ")
             if label == "q":
                 exit()
         if label == "n":

@@ -7,7 +7,14 @@
 # +나 *는 지워도 됨
 
 def strip(line):
-    badChars = ["b/", "n/", "l/", "o/", "+", "*","\n"]
+    badChars = ["b/", "n/", "l/", "o/", "u/", "/", "+", "*", "\n"]
     for c in badChars:
         line = line.replace(c, "")
+
+    temp = line.replace("  ", " ")
+    while line != temp:
+        line = temp.replace("  ", " ")
+        temp = line.replace("  ", " ")
+        print("fingerSnapUtil.py >> strip loop")
+
     return line
