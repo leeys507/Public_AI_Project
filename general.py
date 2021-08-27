@@ -126,7 +126,7 @@ def save_checkpoint(save_path, model, optimizer, valid_loss):
     print(f'Model saved to ==> {save_path}')
 
 
-def predict_sentence(model, vocab, sentence, tokenize, device, cpu_device="cpu"):
+def sentence_prediction(model, vocab, sentence, tokenize, device, cpu_device="cpu"):
     tokenized = [w for w in tokenize(sentence)]
     indexed = [vocab.stoi[t] for t in tokenized]
     length = [len(indexed)]

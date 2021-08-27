@@ -52,7 +52,7 @@ def parse_opt():
     parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
     parser.add_argument('--test', action='store_true', help='test after training')
     parser.add_argument('--test-only', action='store_true', help='test only')
-    parser.add_argument('--test-threshold', type=float, default=0.5, help='test threshold')
+    parser.add_argument('--test-threshold', type=float, default=0.7, help='test threshold')
 
     opt = parser.parse_args()
     return opt
@@ -130,7 +130,7 @@ def start_train(model,
                     save_checkpoint(weights_save_path + "/" + "min_loss.pt", model, optimizer, best_valid_loss)
                     save_metrics(weights_save_path + '/metrics.pt', train_loss_list, valid_loss_list, global_steps_list)
 
-                if best_accuracy < (total_acc/total_count):
+                if best_accuracy <= (total_acc/total_count):
                     best_accuracy = total_acc/total_count
                     saving_best_model_path = weights_save_path + "/" + save_best_model_name
 
