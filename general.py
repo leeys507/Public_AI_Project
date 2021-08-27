@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 
 def create_split_csv(raw_data_path=".", dest_path=".", label_numbers=[0, 1, 2],
     train_csv_name="train.csv", valid_csv_name="valid.csv", test_csv_name="test.csv", 
-    skiprows=1, encoding="euc-kr", test_size=0.25, valid_size=0.25, random_seed=1):
+    skiprows=1, encoding="utf-8", test_size=0.25, valid_size=0.25, random_seed=1):
 
     # Read raw data
     df_raw = pd.read_csv(raw_data_path, skiprows=skiprows, encoding=encoding)
@@ -28,6 +28,8 @@ def create_split_csv(raw_data_path=".", dest_path=".", label_numbers=[0, 1, 2],
     for ln in label_numbers:
         # Split according to label
         df_label = df_raw[df_raw['label'] == ln]
+        if len(df_label) == 0:
+            continue
 
         # Train-test split
         df_full_train, df_test = train_test_split(df_label, test_size = test_size, random_state = random_seed)

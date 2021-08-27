@@ -12,7 +12,7 @@ import torch.nn as nn
 # Evaluation
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-from model import LSTM, CNN1d
+from model import LSTM, CNN1d, Combination
 from utils import colorstr, create_directory
 from general import create_split_csv, get_fields, get_datasets, get_iterators, get_vocablulary,\
     save_checkpoint, save_metrics, load_checkpoint, load_metrics
@@ -37,10 +37,10 @@ def parse_opt():
     parser.add_argument('--train-data-save-name', type=str, default="train.csv", help='save train data name')
     parser.add_argument('--valid-data-save-name', type=str, default="valid.csv", help='save valid data name')
     parser.add_argument('--test-data-save-name', type=str, default="test.csv", help='save test data name')
-    parser.add_argument('--test-size', type=float, default=0.1, help='split test size')
-    parser.add_argument('--valid-size', type=float, default=0.1, help='split valid size')
+    parser.add_argument('--test-size', type=float, default=0.2, help='split test size')
+    parser.add_argument('--valid-size', type=float, default=0.2, help='split valid size')
     parser.add_argument('--random-seed', type=int, default=1, help='random seed')
-    parser.add_argument('--train-batch-size', type=int, default=5, help='train loader batch size')
+    parser.add_argument('--train-batch-size', type=int, default=16, help='train loader batch size')
     parser.add_argument('--valid-batch-size', type=int, default=5, help='valid loader batch size')
     parser.add_argument('--test-batch-size', type=int, default=5, help='test loader batch size')
     parser.add_argument('--word-min-freq', type=int, default=2, help='voca word min frequency')
@@ -75,6 +75,9 @@ def start_train(model,
 
     log_path = weights_save_path + "/log/"
     loss_log_name = "loss_log.txt"
+    acc_log_name = "acc_log.txt"
+
+    saving_best_model_path = weights_save_path + "/" + save_best_model_name
     
     # initialize running values
     running_loss = 0.0
@@ -86,7 +89,10 @@ def start_train(model,
 
     create_directory(log_path)
     log_file = open(log_path + loss_log_name, "w")
+    acc_file = open(log_path + acc_log_name, "w")
+
     log_file.write("Loss in Last Validation of Every Epoch\n\n")
+    acc_file.write("Best Accuracy in Validation of Epochs\n\n")
 
     # training loop --------------------------------------------------------------------------------------------------
     model.train()
@@ -132,10 +138,9 @@ def start_train(model,
 
                 if best_accuracy <= (total_acc/total_count):
                     best_accuracy = total_acc/total_count
-                    saving_best_model_path = weights_save_path + "/" + save_best_model_name
-
                     save_checkpoint(saving_best_model_path, model, optimizer, best_valid_loss)
                     print("--" * 25)
+                    acc_file.write(f"Epoch {epoch}, Step [{global_step}/{num_epochs*len(train_loader)}] | Validation Accuracy: {best_accuracy:.4f}\n")
                     print(f'Valid Accuracy: {best_accuracy:.4f}')
                     print(f"Saving Model(Path): {saving_best_model_path}")
                     print("--" * 25)
@@ -143,6 +148,7 @@ def start_train(model,
         log_file.write(f"Epoch {epoch} | Avg Train Loss: {average_train_loss:.4f} | Avg Valid Loss: {average_valid_loss:.4f}\n")
 
     log_file.close()
+    acc_file.close()
     # training loop end ----------------------------------------------------------------------------------------------
     
     save_checkpoint(weights_save_path + '/last.pt', model, optimizer, best_valid_loss)
@@ -188,7 +194,7 @@ def validate(model, valid_loader, criterion, eval_every,
 
 
 # Evaluation Function
-def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, threshold=0.5):
+def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, threshold=0.7):
     y_pred = []
     y_true = []
     pred_ans = [0] * len(label_numbers)
@@ -216,6 +222,7 @@ def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, thr
             pred_ans[pred]+=1
 
     for ln in label_numbers:
+        if true_cnts[ln] == 0: continue
         print(colorstr("green", f"Class [{classes[ln]}]:"), 
             f"{pred_ans[ln]/true_cnts[ln]:.4f}", f"({pred_ans[ln]}/{true_cnts[ln]})")
     
@@ -236,9 +243,9 @@ def main(opt):
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     cpu_device = "cpu"
 
-    #classes = ["hello", "sorry", "thank", "emergency", "weather"]
-    classes = ["hello", "sorry", "thank"]
-    label_numbers = [0, 1, 2]
+    classes = ["hello", "sorry", "thank", "emergency", "weather", "help", "buy", "negative", "season", "unknown"]
+    #classes = ["hello", "sorry", "thank"]
+    label_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     if opt.test_only == False:
         print(colorstr("red", "bold", "Train: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
@@ -268,7 +275,8 @@ def main(opt):
     # use model list
     model_list = {
         "LSTM": LSTM(text_field.vocab, len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim).to(device),
-        "CNN1d": CNN1d(text_field.vocab, len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device)
+        "CNN1d": CNN1d(text_field.vocab, len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device),
+        "Comb": Combination(text_field.vocab, len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device)
     }
 
     if opt.test_only == False:

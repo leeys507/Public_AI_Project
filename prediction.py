@@ -32,12 +32,13 @@ def parse_opt():
     parser.add_argument('--model-name', type=str, default="LSTM", help='select model')
     parser.add_argument('--random-seed', type=int, default=1, help='random seed')
     parser.add_argument('--threshold', type=float, default=0.7, help='threshold')
-    parser.add_argument('--batch-size', type=int, default=2, help='batch size')
+    parser.add_argument('--batch-size', type=int, default=4, help='batch size')
     parser.add_argument('--word-min-freq', type=int, default=1, help='voca word min frequency')
     parser.add_argument('--emb-dim', type=int, default=300, help='embedding size')
     parser.add_argument('--out-channel', type=int, default=100, help='out channel size')
     parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
     parser.add_argument('--reverse-field', action='store_true', help='use reverse field')
+    parser.add_argument('--input-pred', action='store_true', help='input sentence prediction')
 
     opt = parser.parse_args()
     return opt
@@ -55,28 +56,52 @@ class PredictionDataset(Dataset):
 
         return x
 
+def prediction_input_sentence(model, classes, device, cpu_device, tokenize, threshold=0.7):
+    model.eval()
 
-def prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokenize, threshold=0.5):
+    with torch.no_grad():
+        softmax = torch.nn.Softmax(dim=1)
+        pred_str = None
+
+        while True:
+            text = input("Input Sentence(-1 to quit): ")
+
+            if text == "-1":
+                print(colorstr("red", "bold", "Exit Program"))
+                break
+            
+            output = sentence_prediction(model, model.vocab, text, tokenize, device, cpu_device)
+            output= softmax(output)
+            output = (output > threshold).int().to(cpu_device)
+            top_idx = torch.topk(output, 1)
+            top_idx = top_idx.indices.numpy().reshape(-1)
+
+            pred_str = classes[top_idx[0]] if len(output[output == 1]) == 1 else "unknown"
+            print("Sentence:", colorstr(text), "Prediction:", colorstr("bright_green", "bold", f"Class [{pred_str}]"))
+
+
+def prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokenize, threshold=0.7):
     model.eval()
 
     batch_size = pred_iter.batch_size
     iter_length = len(pred_iter) * batch_size
     cnt = batch_size
-    origin_text = ""
 
     with torch.no_grad():
-        sigmoid = torch.nn.Sigmoid()
+        softmax = torch.nn.Softmax(dim=1)
         pred_str = None
 
         # get text
         if rev_field is not None:
+            origin_text = ""
+
             for (text, text_len), _ in pred_iter:
                 print(f"[{cnt} / {iter_length}]", "--" * 25)
                 for tt in text:
                     for t in range(len(tt)):
                         origin_text += rev_field.reverse(tt[t].unsqueeze(0).unsqueeze(0))[0]
                     output = sentence_prediction(model, model.vocab, origin_text, tokenize, device, cpu_device)
-                    output= sigmoid(output)
+                    output= softmax(output)
                     output = (output > threshold).int().to(cpu_device)
                     top_idx = torch.topk(output, 1)
                     top_idx = top_idx.indices.numpy().reshape(-1)
@@ -94,7 +119,7 @@ def prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokeniz
                 print(f"[{cnt} / {iter_length}]", "--" * 25)
                 for text in texts:
                     output = sentence_prediction(model, model.vocab, text, tokenize, device, cpu_device)
-                    output= sigmoid(output)
+                    output= softmax(output)
                     output = (output > threshold).int().to(cpu_device)
                     top_idx = torch.topk(output, 1)
                     top_idx = top_idx.indices.numpy().reshape(-1)
@@ -112,8 +137,8 @@ def main(opt):
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     cpu_device = "cpu"
 
-    #classes = ["hello", "sorry", "thank", "emergency", "weather"]
-    classes = ["hello", "sorry", "thank"]
+    classes = ["hello", "sorry", "thank", "emergency", "weather", "help", "buy", "negative", "season", "unknown"]
+    #classes = ["hello", "sorry", "thank"]
 
     print(colorstr("red", "bold", "Prediction: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
 
@@ -154,7 +179,10 @@ def main(opt):
     model = model_list[opt.model_name]
     load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, model, device, optimizer=None, strict=False)
 
-    prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokenize=m.morphs, threshold=opt.threshold)
+    if not opt.input_pred:
+        prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokenize=m.morphs, threshold=opt.threshold)
+    else:
+        prediction_input_sentence(model, classes, device, cpu_device, tokenize=m.morphs, threshold=opt.threshold)
 
 
 if __name__ == "__main__":

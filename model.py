@@ -3,32 +3,32 @@ from numpy import dtype
 
 # Models
 import torch
+import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn.functional import embedding
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
 class LSTM(nn.Module):
-    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=300, use_embed=False, pre_embed=None):
+    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=300, dropout=0.4):
         super(LSTM, self).__init__()
 
         self.vocab = vocab
         self.vocab_size = vocab_size
         self.embedding = nn.Embedding(vocab_size, embed_dim)
         self.dimension = dimension
-
-        if use_embed and pre_embed is not None:
-            self.embedding.weight.data.copy_(torch.from_numpy(pre_embed))
         
         self.lstm = nn.LSTM(input_size=embed_dim,
                             hidden_size=dimension,
                             num_layers=1,
                             batch_first=True,
                             bidirectional=True)
-        self.drop = nn.Dropout(p=0.5)
+        self.drop = nn.Dropout(p=dropout)
+        self.relu = nn.ReLU()
 
-        self.fc = nn.Linear(2*dimension, class_num)
-
+        self.fc = nn.Linear(2 * dimension, 3 * dimension)
+        self.fc2 = nn.Linear(3 * dimension, dimension)
+        self.fc3 = nn.Linear(dimension, class_num)
 
     def forward(self, text, text_len):
 
@@ -43,7 +43,10 @@ class LSTM(nn.Module):
         out_reduced = torch.cat((out_forward, out_reverse), 1)
         text_fea = self.drop(out_reduced)
 
-        text_out = self.fc(text_fea)
+        text_out = self.drop(self.relu(self.fc(text_fea)))
+
+        text_out = self.drop(self.relu(self.fc2(text_out)))
+        text_out = self.fc3(text_out)
         #text_out = torch.sigmoid(text_fea) # BCE Loss
 
         return text_out
@@ -65,9 +68,11 @@ class CNN1d(nn.Module):
                                     for fs in filter_sizes
                                     ])
         
-        self.fc = nn.Linear(len(filter_sizes) * n_filters, class_num)
+        self.relu = nn.ReLU()
+        self.fc = nn.Linear(len(filter_sizes) * n_filters, 512)
+        self.fc2 = nn.Linear(512, class_num)
         
-        self.dropout = nn.Dropout(dropout)
+        self.drop = nn.Dropout(p=dropout)
         
     def forward(self, text, text_len):
         
@@ -84,7 +89,96 @@ class CNN1d(nn.Module):
         pooled = [torch.functional.F.max_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
         #pooled_n_shape = [batch size, n_filters]
         
-        cat = self.dropout(torch.cat(pooled, dim = 1))
+        cat = self.drop(torch.cat(pooled, dim = 1))
         #cat_shape = [batch size, n_filters * len(filter_sizes)]
+
+        out = self.drop(self.relu(self.fc(cat)))
+        out = self.fc2(out)
             
-        return self.fc(cat)
+        return out
+
+
+class SpatialDropout(nn.Dropout2d):
+    def forward(self, x):
+        x = x.unsqueeze(2)    # (N, T, 1, K)
+        x = x.permute(0, 3, 2, 1)  # (N, K, 1, T)
+        x = super(SpatialDropout, self).forward(x)  # (N, K, 1, T), some features are masked
+        x = x.permute(0, 3, 2, 1)  # (N, T, 1, K)
+        x = x.squeeze(2)  # (N, T, K)
+        return x
+
+
+class Combination(nn.Module):
+    def __init__(self, vocab, vocab_size, class_num=3, embed_dim=300, hidden_dim=128, lstm_units=128, 
+                n_filters=100, d_prob=0.25, emb_vectors=None, mode="static", kernel_sizes=[1], spatial_drop=0.1):
+        super(Combination, self).__init__()
+        self.vocab = vocab
+        self.vocab_size = vocab_size
+        self.embedding_dim = embed_dim
+        self.kernel_sizes = kernel_sizes
+        self.num_filters = n_filters
+        self.num_classes = class_num
+        self.d_prob = d_prob
+        self.mode = mode
+        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=1)
+        self.embedding_dropout = SpatialDropout(spatial_drop)
+
+        if emb_vectors is not None:
+            self.load_embeddings(emb_vectors)
+
+        self.conv = nn.ModuleList([nn.Conv1d(in_channels=embed_dim,
+                                             out_channels=n_filters,
+                                             kernel_size=k, stride=1) for k in kernel_sizes])
+        self.lstm1 = nn.LSTM(embed_dim, lstm_units,
+                             bidirectional=True, batch_first=True)
+        self.lstm2 = nn.LSTM(lstm_units * 2, lstm_units,
+                             bidirectional=True, batch_first=True)
+        self.lstm_body = nn.LSTM(
+            embed_dim, lstm_units, bidirectional=True, batch_first=True)
+        self.dropout = nn.Dropout(d_prob)
+        self.fc = nn.Linear(len(kernel_sizes) * n_filters, hidden_dim)
+        self.fc_total = nn.Linear(hidden_dim * 1 + lstm_units * 4, hidden_dim)
+        self.fc_final = nn.Linear(hidden_dim, class_num)
+
+    def forward(self, x, x_len):
+        x_emb = self.embedding(x)
+        x_emb = self.embedding_dropout(x_emb)
+        
+        # pad for CNN kernel 5
+        if x_emb.shape[1] < 5:
+            x_emb = F.pad(x_emb, (0, 0, 0, 5 - x_emb.shape[1]), value=0)
+            
+        x = [F.relu(conv(x_emb.transpose(1, 2))) for conv in self.conv]
+        x = [F.max_pool1d(c, c.size(-1)).squeeze(dim=-1) for c in x]
+        x = torch.cat(x, dim=1)
+        x = self.fc(self.dropout(x))
+
+        h_lstm1, _ = self.lstm1(x_emb)
+        h_lstm2, _ = self.lstm2(h_lstm1)
+
+        # average pooling
+        avg_pool2 = torch.mean(h_lstm2, 1)
+        # global max pooling
+        max_pool2, _ = torch.max(h_lstm2, 1)
+
+
+        out = torch.cat([x, avg_pool2, max_pool2], dim=1)
+        out = F.relu(self.fc_total(self.dropout(out)))
+        out = self.fc_final(out)
+
+        return out
+
+    def load_embeddings(self, emb_vectors):
+        if 'static' in self.mode:
+            self.embedding.weight.data.copy_(emb_vectors)
+            if 'non' not in self.mode:
+                self.embedding.weight.data.requires_grad = False
+                print('Loaded pretrained embeddings, weights are not trainable.')
+            else:
+                self.embedding.weight.data.requires_grad = True
+                print('Loaded pretrained embeddings, weights are trainable.')
+        elif self.mode == 'rand':
+            print('Randomly initialized embeddings are used.')
+        else:
+            raise ValueError(
+                'Unexpected value of mode. Please choose from static, nonstatic, rand.')
