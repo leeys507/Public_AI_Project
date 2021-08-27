@@ -163,12 +163,11 @@ def start_train(model,
 # Validation Function
 def validate(model, valid_loader, criterion, eval_every, 
     train_loss_list, valid_loss_list, global_steps_list, global_step, running_loss, device, cpu_device):
-    
-    model.eval()
 
     valid_running_loss = 0.0
     total_acc, total_count = 0, 0
 
+    model.eval()
     with torch.no_grad():                    
         # validation loop
         for ((text, text_len), labels), _ in valid_loader:
