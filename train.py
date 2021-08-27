@@ -52,7 +52,7 @@ def parse_opt():
     parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
     parser.add_argument('--test', action='store_true', help='test after training')
     parser.add_argument('--test-only', action='store_true', help='test only')
-    parser.add_argument('--test-threshold', type=float, default=0.5, help='test threshold')
+    parser.add_argument('--test-threshold', type=float, default=0.7, help='test threshold')
 
     opt = parser.parse_args()
     return opt
