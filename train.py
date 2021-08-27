@@ -130,7 +130,7 @@ def start_train(model,
                     save_checkpoint(weights_save_path + "/" + "min_loss.pt", model, optimizer, best_valid_loss)
                     save_metrics(weights_save_path + '/metrics.pt', train_loss_list, valid_loss_list, global_steps_list)
 
-                if best_accuracy < (total_acc/total_count):
+                if best_accuracy <= (total_acc/total_count):
                     best_accuracy = total_acc/total_count
                     saving_best_model_path = weights_save_path + "/" + save_best_model_name
 
