@@ -174,7 +174,7 @@ def main(opt):
     model_list = {
         "LSTM": LSTM(vocab, len(vocab), class_num=len(classes), embed_dim=opt.emb_dim).to(device),
         "CNN1d": CNN1d(vocab, len(vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device),
-        "Comb": Combination(text_field.vocab, len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device)
+        "Comb": Combination(vocab, len(vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device)
     }
 
     model = model_list[opt.model_name]
