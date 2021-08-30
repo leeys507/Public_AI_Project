@@ -1,4 +1,5 @@
 import requests
+import noisereduce as nr
 
 # key, endpoint
 subscription_key = '539b71356bc54e8a9655d3c59e47e625'
@@ -17,20 +18,19 @@ params = {
     'language': 'ko-KR',
 }
 
-def speech_to_text(file_path, save_txt=False):
-    with open(file_path, 'rb') as f:
-        stream_file = f.read()
+def speech_to_text(file_paths):
+    stt_result = []
+    print(file_paths)
+    for file_path in file_paths:
+        with open(file_path, 'rb') as f:
+            stream_file = f.read()
+        response = requests.post(endpoint, headers=headers, params=params, data=stream_file)
 
-    response = requests.post(endpoint, headers=headers, params=params, data=stream_file)
-    if response.status_code != 200: return None
-
-    result = response.json()
-    print(result['DisplayText'])
-    if save_txt:
-        for_save_name = file_path.split('/')[-1]
-
-        with open(save_path + for_save_name + '.txt', 'w') as wf: # UnicodeEncodeError
-            wf.write(result['DisplayText'])
-    return result['DisplayText']
-
-speech_to_text(test_filename, True)
+        if response.status_code != 200:
+            print(f"path: {file_path} --> Unknown Speech")
+            stt_result.append([file_path, 'Unknown Speech'])
+        else:
+            result = response.json()
+            print(f"path: {file_path} --> {result['DisplayText']}")
+            stt_result.append([file_path, result['DisplayText']])
+    return stt_result

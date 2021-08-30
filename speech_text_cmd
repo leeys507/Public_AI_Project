@@ -20,3 +20,7 @@ python prediction.py --shuffle-data --model-name CNN1d --input-pred
 python prediction.py --shuffle-data --input-pred
 python prediction.py --shuffle-data --input-pred --emb-dim 400
 python prediction.py --shuffle-data --model-name CNN1d --emb-dim 400 --out-channel 256 --input-pred
+
+python prediction.py --shuffle-data --input-speech-paths ../datasets/clean_file/1_0092.wav ../datasets/output_noisy_file2/1_0
+091_TCAR_ch07_-10db.wav
+python prediction.py --shuffle-data --input-speech-paths <paths>

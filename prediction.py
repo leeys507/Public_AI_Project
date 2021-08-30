@@ -15,6 +15,7 @@ from general import get_reverse_vocablulary_and_iter, get_text_field, get_vocabl
     save_checkpoint, save_metrics, load_checkpoint, load_pretrained_weights, load_metrics
 
 from eunjeon import Mecab
+from stt import *
 
 def parse_opt():
     default_path = os.path.join(os.path.expanduser('~'), 'Desktop/') # Desktop
@@ -39,6 +40,7 @@ def parse_opt():
     parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
     parser.add_argument('--reverse-field', action='store_true', help='use reverse field')
     parser.add_argument('--input-pred', action='store_true', help='input sentence prediction')
+    parser.add_argument('--input-speech-paths', default=[], nargs='+', type=str, help='input speech paths for prediction')
 
     opt = parser.parse_args()
     return opt
@@ -56,28 +58,41 @@ class PredictionDataset(Dataset):
 
         return x
 
-def prediction_input_sentence(model, classes, device, cpu_device, tokenize, threshold=0.7):
+def prediction_input_sentence(model, classes, device, cpu_device, tokenize, threshold=0.7, speech_paths=None):
     model.eval()
 
     with torch.no_grad():
         softmax = torch.nn.Softmax(dim=1)
         pred_str = None
 
-        while True:
-            text = input("Input Sentence(-1 to quit): ")
+        if speech_paths is not None:
+            stt_result = speech_to_text(speech_paths)
+            for path, text in stt_result:
+                output = sentence_prediction(model, model.vocab, text, tokenize, device, cpu_device)
+                output = softmax(output)
+                output = (output > threshold).int().to(cpu_device)
+                top_idx = torch.topk(output, 1)
+                top_idx = top_idx.indices.numpy().reshape(-1)
 
-            if text == "-1":
-                print(colorstr("red", "bold", "Exit Program"))
-                break
-            
-            output = sentence_prediction(model, model.vocab, text, tokenize, device, cpu_device)
-            output= softmax(output)
-            output = (output > threshold).int().to(cpu_device)
-            top_idx = torch.topk(output, 1)
-            top_idx = top_idx.indices.numpy().reshape(-1)
+                pred_str = classes[top_idx[0]] if len(output[output == 1]) == 1 else "unknown"
+                print("Sentence:", colorstr(text), "Prediction:",
+                      colorstr("bright_green", "bold", f"Class [{pred_str}]"))
+        else:
+            while True:
+                text = input("Input Sentence(-1 to quit): ")
 
-            pred_str = classes[top_idx[0]] if len(output[output == 1]) == 1 else "unknown"
-            print("Sentence:", colorstr(text), "Prediction:", colorstr("bright_green", "bold", f"Class [{pred_str}]"))
+                if text == "-1":
+                    print(colorstr("red", "bold", "Exit Program"))
+                    break
+
+                output = sentence_prediction(model, model.vocab, text, tokenize, device, cpu_device)
+                output= softmax(output)
+                output = (output > threshold).int().to(cpu_device)
+                top_idx = torch.topk(output, 1)
+                top_idx = top_idx.indices.numpy().reshape(-1)
+
+                pred_str = classes[top_idx[0]] if len(output[output == 1]) == 1 else "unknown"
+                print("Sentence:", colorstr(text), "Prediction:", colorstr("bright_green", "bold", f"Class [{pred_str}]"))
 
 
 def prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokenize, threshold=0.7):
@@ -146,26 +161,27 @@ def main(opt):
 
     rev_field = None
 
-    if opt.reverse_field:
-        # get reverse vocab
-        text_field = get_text_field(m.morphs)
-        fields = [('text', text_field)]
+    if len(opt.input_speech_paths) == 0:
+        if opt.reverse_field:
+            # get reverse vocab
+            text_field = get_text_field(m.morphs)
+            fields = [('text', text_field)]
 
-        pred_data = TabularDataset(path=opt.source_path + opt.source_name, format='CSV', fields=fields, skip_header=True)
+            pred_data = TabularDataset(path=opt.source_path + opt.source_name, format='CSV', fields=fields, skip_header=True)
 
-        pred_iter = BucketIterator(pred_data, batch_size=opt.batch_size, sort_key=lambda x: len(x.text),
-                device=device, sort=False, sort_within_batch=False, shuffle=opt.shuffle_data)
+            pred_iter = BucketIterator(pred_data, batch_size=opt.batch_size, sort_key=lambda x: len(x.text),
+                    device=device, sort=False, sort_within_batch=False, shuffle=opt.shuffle_data)
 
-        text_field = get_vocablulary(text_field, pred_data, min_freq=opt.word_min_freq)
+            text_field = get_vocablulary(text_field, pred_data, min_freq=opt.word_min_freq)
 
-        rev_field, rev_pred_iter = get_reverse_vocablulary_and_iter(opt.source_path + opt.source_name, m.morphs,
-                                    device, opt.batch_size, opt.word_min_freq)
-    else:
-        # load data
-        df_data = pd.read_csv(opt.source_path + opt.source_name, skiprows=0, encoding="utf-8")
-        text_data = df_data["text"].to_numpy()
-        pred_dataset = PredictionDataset(text_data)
-        pred_iter = DataLoader(pred_dataset, batch_size=opt.batch_size, shuffle=opt.shuffle_data)
+            rev_field, rev_pred_iter = get_reverse_vocablulary_and_iter(opt.source_path + opt.source_name, m.morphs,
+                                        device, opt.batch_size, opt.word_min_freq)
+        else:
+            # load data
+            df_data = pd.read_csv(opt.source_path + opt.source_name, skiprows=0, encoding="utf-8")
+            text_data = df_data["text"].to_numpy()
+            pred_dataset = PredictionDataset(text_data)
+            pred_iter = DataLoader(pred_dataset, batch_size=opt.batch_size, shuffle=opt.shuffle_data)
 
     # load vocab
     vocab, weight = load_pretrained_weights(opt.weights_save_path + "/" + opt.best_weight_save_name, device)
@@ -180,7 +196,9 @@ def main(opt):
     model = model_list[opt.model_name]
     load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, model, device, optimizer=None, strict=False)
 
-    if not opt.input_pred:
+    if len(opt.input_speech_paths) != 0:
+        prediction_input_sentence(model, classes, device, cpu_device, tokenize=m.morphs, threshold=opt.threshold, speech_paths=opt.input_speech_paths)
+    elif not opt.input_pred:
         prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokenize=m.morphs, threshold=opt.threshold)
     else:
         prediction_input_sentence(model, classes, device, cpu_device, tokenize=m.morphs, threshold=opt.threshold)
