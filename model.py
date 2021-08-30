@@ -15,7 +15,7 @@ class LSTM(nn.Module):
 
         self.vocab = vocab
         self.vocab_size = vocab_size
-        self.embedding = nn.Embedding(vocab_size, embed_dim)
+        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=1)
         self.dimension = dimension
         
         self.lstm = nn.LSTM(input_size=embed_dim,
@@ -58,7 +58,7 @@ class CNN1d(nn.Module):
         
         self.vocab = vocab
         self.vocab_size = vocab_size
-        self.embedding = nn.Embedding(vocab_size, embed_dim)
+        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=1)
         
         self.convs = nn.ModuleList([
                                     nn.Conv1d(in_channels = embed_dim, 
@@ -108,8 +108,8 @@ class SpatialDropout(nn.Dropout2d):
 
 
 class Combination(nn.Module):
-    def __init__(self, vocab, vocab_size, class_num=3, embed_dim=300, hidden_dim=128, lstm_units=64, 
-                n_filters=100, d_prob=0.25, emb_vectors=None, mode="static", kernel_sizes=[1], spatial_drop=0.1):
+    def __init__(self, vocab, vocab_size, class_num=3, embed_dim=300, hidden_dim=128, hidden_size=64, 
+                n_filters=128, d_prob=0.4, emb_vectors=None, mode="static", kernel_sizes=[1], spatial_drop=0.1):
         super(Combination, self).__init__()
         self.vocab = vocab
         self.vocab_size = vocab_size
@@ -128,14 +128,14 @@ class Combination(nn.Module):
         self.conv = nn.ModuleList([nn.Conv1d(in_channels=embed_dim,
                                              out_channels=n_filters,
                                              kernel_size=k, stride=1) for k in kernel_sizes])
-        self.lstm1 = nn.LSTM(embed_dim, hidden_size=lstm_units,
+        self.lstm1 = nn.LSTM(embed_dim, hidden_size=hidden_size,
                              bidirectional=True, batch_first=True)
-        # self.lstm2 = nn.LSTM(lstm_units * 2, lstm_units,
+        # self.lstm2 = nn.LSTM(lstm_units * 2, hidden_size,
         #                      bidirectional=True, batch_first=True)
 
         self.dropout = nn.Dropout(d_prob)
         self.fc = nn.Linear(len(kernel_sizes) * n_filters, hidden_dim)
-        self.fc_total = nn.Linear(hidden_dim * 1 + lstm_units * 4, hidden_dim)
+        self.fc_total = nn.Linear(hidden_dim * 1 + hidden_size * 4, hidden_dim)
         self.fc_final = nn.Linear(hidden_dim, class_num)
 
     def forward(self, x, x_len):

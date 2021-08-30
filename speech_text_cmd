@@ -10,6 +10,7 @@ python train.py --test --epochs 100 --emb-dim 400
 /////////// Test
 python train.py --test-only
 python train.py --test-only --model-name CNN1d
+python train.py --test-only --model-name CNN1d --best-weight-save-name min_loss.pt --emb-dim 400
 
 
 /////////// Inference

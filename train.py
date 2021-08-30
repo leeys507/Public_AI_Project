@@ -46,7 +46,7 @@ def parse_opt():
     parser.add_argument('--word-min-freq', type=int, default=2, help='voca word min frequency')
     parser.add_argument('--epochs', type=int, default=50, help='train epochs')
     parser.add_argument('--emb-dim', type=int, default=300, help='embedding size')
-    parser.add_argument('--out-channel', type=int, default=100, help='out channel size')
+    parser.add_argument('--out-channel', type=int, default=128, help='out channel size')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
     parser.add_argument('--lr-step', type=int, default=30, help='LR step')
     parser.add_argument('--eval-every', type=int, default=3, help='train every evaluation')
@@ -129,9 +129,9 @@ def start_train(model,
                 model.train()
 
                 # print progress
-                print('Epoch [{}/{}], Step [{}/{}], Train Loss: {:.4f}, Valid Loss: {:.4f}'
+                print('Epoch [{}/{}], Step [{}/{}], Train Loss: {:.4f}, Valid Loss: {:.4f}, Best Valid Accuracy: {:.4f}'
                       .format(epoch+1, num_epochs, global_step, num_epochs*len(train_loader),
-                              average_train_loss, average_valid_loss))
+                              average_train_loss, average_valid_loss, best_accuracy))
                 
                 if best_train_loss > average_train_loss:
                     best_train_loss = average_train_loss
@@ -292,7 +292,7 @@ def main(opt):
         # model
         model = model_list[opt.model_name]
         optimizer = optim.Adam(model.parameters(), lr=opt.lr)
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.lr_step, gamma=0.5)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.lr_step, gamma=0.2)
 
         start_train(model, optimizer, train_iter, valid_iter, device, cpu_device, scheduler,
             num_epochs=opt.epochs, eval_every=opt.eval_every, 
