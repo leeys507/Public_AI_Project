@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchtext.legacy.data import TabularDataset, BucketIterator
 
-from model import LSTM, CNN1d
+from model import LSTM, CNN1d, Combination
 from utils import colorstr
 from general import get_reverse_vocablulary_and_iter, get_text_field, get_vocablulary, sentence_prediction,\
     save_checkpoint, save_metrics, load_checkpoint, load_pretrained_weights, load_metrics
@@ -106,7 +106,7 @@ def prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokeniz
                     top_idx = torch.topk(output, 1)
                     top_idx = top_idx.indices.numpy().reshape(-1)
 
-                    pred_str = classes[top_idx[0]] if len(output[output == 1]) == 1 else "unknown"
+                    pred_str = classes[top_idx[0]] if len(output[output == 1]) == 1 else classes[-1]
                     print("Sentence:", colorstr(origin_text), "Prediction:", colorstr("bright_green", "bold", f"Class [{pred_str}]"))
                     origin_text = ""
                 cnt += batch_size
@@ -124,7 +124,7 @@ def prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokeniz
                     top_idx = torch.topk(output, 1)
                     top_idx = top_idx.indices.numpy().reshape(-1)
 
-                    pred_str = classes[top_idx[0]] if len(output[output == 1]) == 1 else "unknown"
+                    pred_str = classes[top_idx[0]] if len(output[output == 1]) == 1 else classes[-1]
                     print("Sentence:", colorstr(text), "Prediction:", colorstr("bright_green", "bold", f"Class [{pred_str}]"))
                 cnt += batch_size
                 q = input("Next? [y/n]: ")
@@ -173,7 +173,8 @@ def main(opt):
     # use model list
     model_list = {
         "LSTM": LSTM(vocab, len(vocab), class_num=len(classes), embed_dim=opt.emb_dim).to(device),
-        "CNN1d": CNN1d(vocab, len(vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device)
+        "CNN1d": CNN1d(vocab, len(vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device),
+        "Comb": Combination(text_field.vocab, len(text_field.vocab), class_num=len(classes), embed_dim=opt.emb_dim, n_filters=opt.out_channel).to(device)
     }
 
     model = model_list[opt.model_name]

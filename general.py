@@ -28,7 +28,7 @@ def create_split_csv(raw_data_path=".", dest_path=".", label_numbers=[0, 1, 2],
     for ln in label_numbers:
         # Split according to label
         df_label = df_raw[df_raw['label'] == ln]
-        if len(df_label) == 0:
+        if len(df_label) == 0 or ln == len(label_numbers) - 1:
             continue
 
         # Train-test split

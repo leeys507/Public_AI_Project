@@ -48,6 +48,7 @@ def parse_opt():
     parser.add_argument('--emb-dim', type=int, default=300, help='embedding size')
     parser.add_argument('--out-channel', type=int, default=100, help='out channel size')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
+    parser.add_argument('--lr-step', type=int, default=30, help='LR step')
     parser.add_argument('--eval-every', type=int, default=3, help='train every evaluation')
     parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
     parser.add_argument('--test', action='store_true', help='test after training')
@@ -65,6 +66,7 @@ def start_train(model,
         valid_loader, # valid_iter
         device,
         cpu_device,
+        scheduler,
         criterion = nn.CrossEntropyLoss(),
         num_epochs = 5,
         eval_every = 1, # len(train_iter) // 2
@@ -86,6 +88,7 @@ def start_train(model,
     valid_loss_list = []
     global_steps_list = []
     best_accuracy = 0.0
+    best_train_loss = float("Inf")
 
     create_directory(log_path)
     log_file = open(log_path + loss_log_name, "w")
@@ -130,6 +133,9 @@ def start_train(model,
                       .format(epoch+1, num_epochs, global_step, num_epochs*len(train_loader),
                               average_train_loss, average_valid_loss))
                 
+                if best_train_loss > average_train_loss:
+                    best_train_loss = average_train_loss
+
                 # checkpoint
                 if best_valid_loss > average_valid_loss:
                     best_valid_loss = average_valid_loss
@@ -137,6 +143,9 @@ def start_train(model,
                     save_metrics(weights_save_path + '/metrics.pt', train_loss_list, valid_loss_list, global_steps_list)
 
                 if best_accuracy <= (total_acc/total_count):
+                    if best_accuracy == (total_acc/total_count):
+                        if best_train_loss < average_train_loss:
+                            continue
                     best_accuracy = total_acc/total_count
                     save_checkpoint(saving_best_model_path, model, optimizer, best_valid_loss)
                     print("--" * 25)
@@ -145,6 +154,7 @@ def start_train(model,
                     print(f"Saving Model(Path): {saving_best_model_path}")
                     print("--" * 25)
         # one epoch end ----------------------------------------------------------------------------------------------
+        scheduler.step()
         log_file.write(f"Epoch {epoch} | Avg Train Loss: {average_train_loss:.4f} | Avg Valid Loss: {average_valid_loss:.4f}\n")
 
     log_file.close()
@@ -282,8 +292,9 @@ def main(opt):
         # model
         model = model_list[opt.model_name]
         optimizer = optim.Adam(model.parameters(), lr=opt.lr)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.lr_step, gamma=0.5)
 
-        start_train(model, optimizer, train_iter, valid_iter, device, cpu_device, 
+        start_train(model, optimizer, train_iter, valid_iter, device, cpu_device, scheduler,
             num_epochs=opt.epochs, eval_every=opt.eval_every, 
             weights_save_path=opt.weights_save_path, save_best_model_name=opt.best_weight_save_name)
     
