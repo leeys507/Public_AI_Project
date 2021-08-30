@@ -1,8 +1,8 @@
 <div align="center">
 <p>
 <img width="550" src="img/pred_img.png">
-<img width="550" src="img/pred_img.png(1)">
-<img width="550" src="img/pred_img.png(2)">
+<img width="550" src="img/pred_img(1).png">
+<img width="550" src="img/pred_img(2).png">
 </p>
 <br>
 <div>
