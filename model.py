@@ -10,7 +10,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
 class LSTM(nn.Module):
-    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=300, dropout=0.4):
+    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=300, multiple_fc=4, dropout=0.6):
         super(LSTM, self).__init__()
 
         self.vocab = vocab
@@ -25,10 +25,10 @@ class LSTM(nn.Module):
                             bidirectional=True)
         self.drop = nn.Dropout(p=dropout)
         self.relu = nn.ReLU()
+        self.bat1 = nn.BatchNorm1d(multiple_fc * dimension)
 
-        self.fc = nn.Linear(2 * dimension, 3 * dimension)
-        self.fc2 = nn.Linear(3 * dimension, dimension)
-        self.fc3 = nn.Linear(dimension, class_num)
+        self.fc = nn.Linear(2 * dimension, multiple_fc * dimension)
+        self.fc2 = nn.Linear(multiple_fc * dimension, class_num)
 
     def forward(self, text, text_len):
 
@@ -41,18 +41,17 @@ class LSTM(nn.Module):
         out_forward = output[range(len(output)), text_len - 1, :self.dimension]
         out_reverse = output[:, 0, self.dimension:]
         out_reduced = torch.cat((out_forward, out_reverse), 1)
-        text_fea = self.drop(out_reduced)
+        text_fea = out_reduced
 
         text_out = self.drop(self.relu(self.fc(text_fea)))
-
-        text_out = self.drop(self.relu(self.fc2(text_out)))
-        text_out = self.fc3(text_out)
+        text_out = self.fc2(text_out)
 
         return text_out
 
 
 class CNN1d(nn.Module):
-    def __init__(self, vocab, vocab_size, embed_dim=300, n_filters=128, multiple_fc=4, class_num=3, dropout=0.4, kernel_sizes=[1]):
+    def __init__(self, vocab, vocab_size, embed_dim=300, n_filters=128, 
+        multiple_fc=4, class_num=3, dropout=0.4, kernel_sizes=[1]):
         
         super().__init__()
         
@@ -88,12 +87,12 @@ class CNN1d(nn.Module):
         pooled = [torch.functional.F.max_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
         #pooled_n_shape = [batch size, n_filters]
         
-        cat = self.drop(torch.cat(pooled, dim = 1))
+        cat = self.drop(self.relu(torch.cat(pooled, dim = 1)))
         #cat_shape = [batch size, n_filters * len(filter_sizes)]
 
         out = self.drop(self.relu(self.fc(cat)))
         out = self.fc2(out)
-            
+        
         return out
 
 
@@ -121,6 +120,7 @@ class Combination(nn.Module):
         self.mode = mode
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=1)
         self.embedding_dropout = SpatialDropout(spatial_drop)
+        self.relu = nn.ReLU()
 
         if emb_vectors is not None:
             self.load_embeddings(emb_vectors)
@@ -149,7 +149,7 @@ class Combination(nn.Module):
         x = [F.relu(conv(x_emb.transpose(1, 2))) for conv in self.conv]
         x = [F.max_pool1d(c, c.size(-1)).squeeze(dim=-1) for c in x]
         x = torch.cat(x, dim=1)
-        x = self.fc(self.dropout(x))
+        x = self.dropout(self.relu(self.fc(x)))
 
         h_lstm1, _ = self.lstm1(x_emb)
         #h_lstm2, _ = self.lstm2(h_lstm1)
@@ -161,7 +161,7 @@ class Combination(nn.Module):
 
 
         out = torch.cat([x, avg_pool2, max_pool2], dim=1)
-        out = F.relu(self.fc_total(self.dropout(out)))
+        out = self.dropout(self.relu(self.fc_total(out)))
         out = self.fc_final(out)
 
         return out
