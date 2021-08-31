@@ -41,6 +41,7 @@ def parse_opt():
     parser.add_argument('--reverse-field', action='store_true', help='use reverse field')
     parser.add_argument('--input-pred', action='store_true', help='input sentence prediction')
     parser.add_argument('--input-speech-paths', default=[], nargs='+', type=str, help='input speech paths for prediction')
+    parser.add_argument('--input-speech-folder', type=str, default='', help='input speech file folder path for prediction')
 
     opt = parser.parse_args()
     return opt
@@ -161,7 +162,7 @@ def main(opt):
 
     rev_field = None
 
-    if len(opt.input_speech_paths) == 0:
+    if len(opt.input_speech_paths) == 0 and opt.input_speech_folder == '':
         if opt.reverse_field:
             # get reverse vocab
             text_field = get_text_field(m.morphs)
@@ -198,6 +199,9 @@ def main(opt):
 
     if len(opt.input_speech_paths) != 0:
         prediction_input_sentence(model, classes, device, cpu_device, tokenize=m.morphs, threshold=opt.threshold, speech_paths=opt.input_speech_paths)
+    elif opt.input_speech_folder != '':
+        all_files = folder_to_filepaths(opt.input_speech_folder)
+        prediction_input_sentence(model, classes, device, cpu_device, tokenize=m.morphs, threshold=opt.threshold, speech_paths=all_files)
     elif not opt.input_pred:
         prediction(model, pred_iter, classes, device, cpu_device, rev_field, tokenize=m.morphs, threshold=opt.threshold)
     else:

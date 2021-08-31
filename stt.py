@@ -2,6 +2,7 @@ import requests
 import noisereduce as nr
 import scipy.io.wavfile as wavfile
 import os
+import glob
 
 # key, endpoint
 subscription_key = '539b71356bc54e8a9655d3c59e47e625'
@@ -44,3 +45,6 @@ def speech_to_text(file_paths, apply_noisereduce=False):
             print(f"path: {file_path} --> {result['DisplayText']}")
             stt_result.append([file_path, result['DisplayText']])
     return stt_result
+
+def folder_to_filepaths(folder_path):
+    return glob.glob(os.path.join(folder_path, "*.wav"))
