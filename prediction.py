@@ -36,7 +36,7 @@ def parse_opt():
     parser.add_argument('--batch-size', type=int, default=4, help='batch size')
     parser.add_argument('--word-min-freq', type=int, default=1, help='voca word min frequency')
     parser.add_argument('--emb-dim', type=int, default=300, help='embedding size')
-    parser.add_argument('--out-channel', type=int, default=100, help='out channel size')
+    parser.add_argument('--out-channel', type=int, default=128, help='out channel size')
     parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
     parser.add_argument('--reverse-field', action='store_true', help='use reverse field')
     parser.add_argument('--input-pred', action='store_true', help='input sentence prediction')
