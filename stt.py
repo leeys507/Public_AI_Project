@@ -28,12 +28,7 @@ def speech_to_text(file_paths, apply_noisereduce=False):
             stream_file = f.read()
 
         if apply_noisereduce:
-            rate, data = wavfile.read(file_path)
-            noise_reduced_data = nr.reduce_noise(y=data, sr=rate)
-            wavfile.write('tmp.wav', data=noise_reduced_data, rate=rate)
-            with open('tmp.wav', 'rb') as f:
-                stream_file = f.read()
-            os.remove('tmp.wav')
+            stream_file = noise_reduction(file_path)
 
         response = requests.post(endpoint, headers=headers, params=params, data=stream_file)
 
@@ -48,3 +43,13 @@ def speech_to_text(file_paths, apply_noisereduce=False):
 
 def folder_to_filepaths(folder_path):
     return glob.glob(os.path.join(folder_path, "*.wav"))
+
+
+def noise_reduction(file_path):
+    rate, data = wavfile.read(file_path)
+    noise_reduced_data = nr.reduce_noise(y=data, sr=rate)
+    wavfile.write('tmp.wav', data=noise_reduced_data, rate=rate)
+    with open('tmp.wav', 'rb') as f:
+        stream_file = f.read()
+    os.remove('tmp.wav')
+    return stream_file
