@@ -47,7 +47,8 @@ def folder_to_filepaths(folder_path):
 
 def noise_reduction(file_path):
     rate, data = wavfile.read(file_path)
-    noise_reduced_data = nr.reduce_noise(y=data, sr=rate)
+    # noise_reduced_data = nr.reduce_noise(y=data, sr=rate, n_std_thresh_stationary=1, stationary=True)
+    noise_reduced_data = nr.reduce_noise(y=data, sr=rate, thresh_n_mult_nonstationary=1.1)
     wavfile.write('tmp.wav', data=noise_reduced_data, rate=rate)
     with open('tmp.wav', 'rb') as f:
         stream_file = f.read()

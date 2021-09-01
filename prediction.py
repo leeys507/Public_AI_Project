@@ -67,7 +67,7 @@ def prediction_input_sentence(model, classes, device, cpu_device, tokenize, thre
         pred_str = None
 
         if speech_paths is not None:
-            stt_result = speech_to_text(speech_paths)
+            stt_result = speech_to_text(speech_paths, True)
             for path, text in stt_result:
                 output = sentence_prediction(model, model.vocab, text, tokenize, device, cpu_device)
                 output = softmax(output)
