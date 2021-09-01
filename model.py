@@ -10,7 +10,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
 class LSTM(nn.Module):
-    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=300, multiple_fc=4, dropout=0.6):
+    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=512, multiple_fc=4, dropout=0.6):
         super(LSTM, self).__init__()
 
         self.vocab = vocab
@@ -50,8 +50,8 @@ class LSTM(nn.Module):
 
 
 class CNN1d(nn.Module):
-    def __init__(self, vocab, vocab_size, embed_dim=300, n_filters=128, 
-        multiple_fc=4, class_num=3, dropout=0.4, kernel_sizes=[1]):
+    def __init__(self, vocab, vocab_size, embed_dim=512, n_filters=128, 
+        multiple_fc=4, class_num=3, dropout=0.4, kernel_sizes=[2]):
         
         super().__init__()
         
@@ -107,35 +107,37 @@ class SpatialDropout(nn.Dropout2d):
 
 
 class Combination(nn.Module):
-    def __init__(self, vocab, vocab_size, class_num=3, embed_dim=300, hidden_dim=128, hidden_size=64, 
-                n_filters=128, d_prob=0.4, emb_vectors=None, mode="static", kernel_sizes=[1], spatial_drop=0.1):
+    def __init__(self, vocab, vocab_size, class_num=3, embed_dim=512, hidden_dim=128, hidden_size=128, 
+                n_filters=128, d_prob=0.4, emb_vectors=None, mode="static", kernel_sizes=[2], spatial_drop=0.1):
         super(Combination, self).__init__()
         self.vocab = vocab
         self.vocab_size = vocab_size
         self.embedding_dim = embed_dim
+        self.hidden_size = hidden_size
         self.kernel_sizes = kernel_sizes
         self.num_filters = n_filters
         self.num_classes = class_num
         self.d_prob = d_prob
         self.mode = mode
-        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=1)
+        self.embedding = nn.Embedding(vocab_size, self.embedding_dim, padding_idx=1)
         self.embedding_dropout = SpatialDropout(spatial_drop)
         self.relu = nn.ReLU()
 
         if emb_vectors is not None:
             self.load_embeddings(emb_vectors)
 
-        self.conv = nn.ModuleList([nn.Conv1d(in_channels=embed_dim,
+        self.conv = nn.ModuleList([nn.Conv1d(in_channels=self.embedding_dim,
                                              out_channels=n_filters,
                                              kernel_size=k, stride=1) for k in kernel_sizes])
-        self.lstm1 = nn.LSTM(embed_dim, hidden_size=hidden_size,
+        self.lstm1 = nn.LSTM(hidden_dim, hidden_size=hidden_size,
                              bidirectional=True, batch_first=True)
         # self.lstm2 = nn.LSTM(lstm_units * 2, hidden_size,
         #                      bidirectional=True, batch_first=True)
 
         self.dropout = nn.Dropout(d_prob)
         self.fc = nn.Linear(len(kernel_sizes) * n_filters, hidden_dim)
-        self.fc_total = nn.Linear(hidden_dim * 1 + hidden_size * 4, hidden_dim)
+        #self.fc_total = nn.Linear(hidden_dim * 1 + hidden_size * 4, hidden_dim)
+        self.fc_total = nn.Linear(hidden_size * 2, hidden_dim)
         self.fc_final = nn.Linear(hidden_dim, class_num)
 
     def forward(self, x, x_len):
@@ -149,18 +151,20 @@ class Combination(nn.Module):
         x = [F.relu(conv(x_emb.transpose(1, 2))) for conv in self.conv]
         x = [F.max_pool1d(c, c.size(-1)).squeeze(dim=-1) for c in x]
         x = torch.cat(x, dim=1)
-        x = self.dropout(self.relu(self.fc(x)))
+        #x = self.dropout(self.relu(self.fc(x)))
+        x = x.unsqueeze(0)
 
-        h_lstm1, _ = self.lstm1(x_emb)
-        #h_lstm2, _ = self.lstm2(h_lstm1)
+        h_lstm1, _ = self.lstm1(x)
+        # h_lstm2, _ = self.lstm2(h_lstm1)
 
         # average pooling
-        avg_pool2 = torch.mean(h_lstm1, 1)
+        # avg_pool2 = torch.mean(h_lstm1, 1)
         # global max pooling
-        max_pool2, _ = torch.max(h_lstm1, 1)
+        # max_pool2, _ = torch.max(h_lstm1, 1)
 
 
-        out = torch.cat([x, avg_pool2, max_pool2], dim=1)
+        #out = torch.cat([x, avg_pool2, max_pool2], dim=1)
+        out = h_lstm1.squeeze(0)
         out = self.dropout(self.relu(self.fc_total(out)))
         out = self.fc_final(out)
 

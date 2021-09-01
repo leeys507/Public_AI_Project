@@ -45,7 +45,7 @@ def parse_opt():
     parser.add_argument('--test-batch-size', type=int, default=5, help='test loader batch size')
     parser.add_argument('--word-min-freq', type=int, default=2, help='voca word min frequency')
     parser.add_argument('--epochs', type=int, default=50, help='train epochs')
-    parser.add_argument('--emb-dim', type=int, default=300, help='embedding size')
+    parser.add_argument('--emb-dim', type=int, default=512, help='embedding size')
     parser.add_argument('--out-channel', type=int, default=128, help='out channel size')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
     parser.add_argument('--lr-step', type=int, default=30, help='LR step')
@@ -53,7 +53,7 @@ def parse_opt():
     parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
     parser.add_argument('--test', action='store_true', help='test after training')
     parser.add_argument('--test-only', action='store_true', help='test only')
-    parser.add_argument('--test-threshold', type=float, default=0.7, help='test threshold')
+    parser.add_argument('--threshold', type=float, default=0.7, help='test threshold')
 
     opt = parser.parse_args()
     return opt
@@ -67,6 +67,7 @@ def start_train(model,
         device,
         cpu_device,
         scheduler,
+        threshold = 0.7,
         criterion = nn.CrossEntropyLoss(),
         num_epochs = 5,
         eval_every = 1, # len(train_iter) // 2
@@ -122,7 +123,7 @@ def start_train(model,
                 average_train_loss, average_valid_loss, total_acc, total_count = \
                 validate(model, valid_loader, criterion, eval_every, 
                 train_loss_list, valid_loss_list, global_steps_list, global_step, 
-                running_loss, device, cpu_device)
+                running_loss, device, cpu_device, threshold)
 
                 # resetting running values
                 running_loss = 0.0                
@@ -172,10 +173,12 @@ def start_train(model,
 
 # Validation Function
 def validate(model, valid_loader, criterion, eval_every, 
-    train_loss_list, valid_loss_list, global_steps_list, global_step, running_loss, device, cpu_device):
+    train_loss_list, valid_loss_list, global_steps_list, global_step, running_loss, device, cpu_device, threshold=0.7):
 
     valid_running_loss = 0.0
     total_acc, total_count = 0, 0
+
+    softmax = torch.nn.Softmax(dim=1)
 
     model.eval()
     with torch.no_grad():                    
@@ -189,6 +192,8 @@ def validate(model, valid_loader, criterion, eval_every,
             loss = criterion(output, labels)
             valid_running_loss += loss.item()
 
+            output = softmax(output)
+            output = (output > threshold).int()
             total_acc += (output.argmax(1) == labels).sum().item()
             total_count += labels.size(0)
 
@@ -208,6 +213,8 @@ def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, thr
     y_true = []
     pred_ans = [0] * len(label_numbers)
     true_cnts = [0] * len(label_numbers)
+    
+    softmax = torch.nn.Softmax(dim=1)
 
     model.eval()
     with torch.no_grad():
@@ -216,7 +223,8 @@ def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, thr
             text = text.to(device)
             text_len = text_len.to(cpu_device)
             output = model(text, text_len)
-
+            
+            output = softmax(output)
             output = (output > threshold).int()
             y_pred.extend(output.tolist())
             y_true.extend(labels.tolist())
@@ -294,7 +302,7 @@ def main(opt):
         optimizer = optim.Adam(model.parameters(), lr=opt.lr)
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.lr_step, gamma=0.2)
 
-        start_train(model, optimizer, train_iter, valid_iter, device, cpu_device, scheduler,
+        start_train(model, optimizer, train_iter, valid_iter, device, cpu_device, scheduler, threshold=opt.threshold,
             num_epochs=opt.epochs, eval_every=opt.eval_every, 
             weights_save_path=opt.weights_save_path, save_best_model_name=opt.best_weight_save_name)
     
@@ -304,7 +312,7 @@ def main(opt):
 
         print(colorstr("red", "bold", "Test: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
         load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, best_model, device, optimizer=optimizer, strict=False)
-        evaluate(best_model, test_iter, classes, label_numbers, device, cpu_device, threshold=opt.test_threshold)
+        evaluate(best_model, test_iter, classes, label_numbers, device, cpu_device, threshold=opt.threshold)
 
 
 if __name__ == "__main__":
