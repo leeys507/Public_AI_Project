@@ -10,7 +10,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
 class LSTM(nn.Module):
-    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=512, multiple_fc=4, dropout=0.6):
+    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=512, multiple_fc=4, dropout=0.5):
         super(LSTM, self).__init__()
 
         self.vocab = vocab
@@ -27,7 +27,7 @@ class LSTM(nn.Module):
         self.relu = nn.ReLU()
         self.bat1 = nn.BatchNorm1d(multiple_fc * dimension)
 
-        self.fc = nn.Linear(2 * dimension, multiple_fc * dimension)
+        self.fc = nn.Linear(2 * dimension, multiple_fc * dimension) # bidirectional lstm input shape (x 2)
         self.fc2 = nn.Linear(multiple_fc * dimension, class_num)
 
     def forward(self, text, text_len):
@@ -62,7 +62,7 @@ class CNN1d(nn.Module):
         self.convs = nn.ModuleList([
                                     nn.Conv1d(in_channels = embed_dim, 
                                               out_channels = n_filters, 
-                                              kernel_size = fs)
+                                              kernel_size = fs, padding=1)
                                     for fs in kernel_sizes
                                     ])
         
@@ -107,7 +107,7 @@ class SpatialDropout(nn.Dropout2d):
 
 
 class Combination(nn.Module):
-    def __init__(self, vocab, vocab_size, class_num=3, embed_dim=512, hidden_dim=128, hidden_size=128, 
+    def __init__(self, vocab, vocab_size, class_num=3, embed_dim=512, hidden_size=256, 
                 n_filters=128, d_prob=0.4, emb_vectors=None, mode="static", kernel_sizes=[2], spatial_drop=0.1):
         super(Combination, self).__init__()
         self.vocab = vocab
@@ -117,6 +117,7 @@ class Combination(nn.Module):
         self.kernel_sizes = kernel_sizes
         self.num_filters = n_filters
         self.num_classes = class_num
+        self.hidden_dim = n_filters
         self.d_prob = d_prob
         self.mode = mode
         self.embedding = nn.Embedding(vocab_size, self.embedding_dim, padding_idx=1)
@@ -129,16 +130,12 @@ class Combination(nn.Module):
         self.conv = nn.ModuleList([nn.Conv1d(in_channels=self.embedding_dim,
                                              out_channels=n_filters,
                                              kernel_size=k, stride=1) for k in kernel_sizes])
-        self.lstm1 = nn.LSTM(hidden_dim, hidden_size=hidden_size,
+        self.lstm = nn.LSTM(input_size=self.hidden_dim * len(kernel_sizes), hidden_size=hidden_size,
                              bidirectional=True, batch_first=True)
-        # self.lstm2 = nn.LSTM(lstm_units * 2, hidden_size,
-        #                      bidirectional=True, batch_first=True)
 
         self.dropout = nn.Dropout(d_prob)
-        self.fc = nn.Linear(len(kernel_sizes) * n_filters, hidden_dim)
-        #self.fc_total = nn.Linear(hidden_dim * 1 + hidden_size * 4, hidden_dim)
-        self.fc_total = nn.Linear(hidden_size * 2, hidden_dim)
-        self.fc_final = nn.Linear(hidden_dim, class_num)
+        self.fc = nn.Linear(hidden_size * 2, self.hidden_dim)
+        self.fc_final = nn.Linear(self.hidden_dim, class_num)
 
     def forward(self, x, x_len):
         x_emb = self.embedding(x)
@@ -151,36 +148,12 @@ class Combination(nn.Module):
         x = [F.relu(conv(x_emb.transpose(1, 2))) for conv in self.conv]
         x = [F.max_pool1d(c, c.size(-1)).squeeze(dim=-1) for c in x]
         x = torch.cat(x, dim=1)
-        #x = self.dropout(self.relu(self.fc(x)))
         x = x.unsqueeze(0)
 
-        h_lstm1, _ = self.lstm1(x)
-        # h_lstm2, _ = self.lstm2(h_lstm1)
+        h_lstm, _ = self.lstm(x) # bidirectional lstm input shape (x 2)
 
-        # average pooling
-        # avg_pool2 = torch.mean(h_lstm1, 1)
-        # global max pooling
-        # max_pool2, _ = torch.max(h_lstm1, 1)
-
-
-        #out = torch.cat([x, avg_pool2, max_pool2], dim=1)
-        out = h_lstm1.squeeze(0)
-        out = self.dropout(self.relu(self.fc_total(out)))
+        out = h_lstm.squeeze(0)
+        out = self.dropout(self.relu(self.fc(out)))
         out = self.fc_final(out)
 
         return out
-
-    def load_embeddings(self, emb_vectors):
-        if 'static' in self.mode:
-            self.embedding.weight.data.copy_(emb_vectors)
-            if 'non' not in self.mode:
-                self.embedding.weight.data.requires_grad = False
-                print('Loaded pretrained embeddings, weights are not trainable.')
-            else:
-                self.embedding.weight.data.requires_grad = True
-                print('Loaded pretrained embeddings, weights are trainable.')
-        elif self.mode == 'rand':
-            print('Randomly initialized embeddings are used.')
-        else:
-            raise ValueError(
-                'Unexpected value of mode. Please choose from static, nonstatic, rand.')

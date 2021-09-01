@@ -48,7 +48,7 @@ def parse_opt():
     parser.add_argument('--emb-dim', type=int, default=512, help='embedding size')
     parser.add_argument('--out-channel', type=int, default=128, help='out channel size')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--lr-step', type=int, default=30, help='LR step')
+    parser.add_argument('--lr-step', type=int, default=60, help='LR step')
     parser.add_argument('--eval-every', type=int, default=3, help='train every evaluation')
     parser.add_argument('--shuffle-data', action='store_true', help='shuffle iterator')
     parser.add_argument('--test', action='store_true', help='test after training')
