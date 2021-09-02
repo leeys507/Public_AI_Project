@@ -14,7 +14,7 @@ def create_split_csv(raw_data_path=".", dest_path=".", label_numbers=[0, 1, 2],
     df_raw = pd.read_csv(raw_data_path, skiprows=skiprows, encoding=encoding)
 
     # 빈 텍스트 행 제거
-    df_raw.drop( df_raw[df_raw.text.str.len() < 5].index, inplace=True)
+    df_raw.drop( df_raw[df_raw.text.str.len() < 1].index, inplace=True)
 
     df_raw = df_raw.dropna()
 
