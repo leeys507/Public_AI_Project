@@ -1,7 +1,7 @@
 <div align="center">
 <p>
 <img width="550" src="img/car_detection.png">
-<img width="550" src="img/license_plate_detection.png">
+<img width="550" height="400" src="img/license_plate_detection.png">
 <img width="450" src="img/OCR.png">
 </p>
 <br>
