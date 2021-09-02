@@ -148,8 +148,8 @@ def start_train(model,
                         if best_train_loss < average_train_loss:
                             continue
                     best_accuracy = total_acc/total_count
-                    save_checkpoint(saving_best_model_path, model, optimizer, best_valid_loss)
                     print("--" * 25)
+                    save_checkpoint(saving_best_model_path, model, optimizer, best_valid_loss)
                     acc_file.write(f"Epoch {epoch}, Step [{global_step}/{num_epochs*len(train_loader)}] | Validation Accuracy: {best_accuracy:.4f}\n")
                     print(f'Valid Accuracy: {best_accuracy:.4f}')
                     print(f"Saving Model(Path): {saving_best_model_path}")
@@ -242,18 +242,6 @@ def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, thr
         if true_cnts[ln] == 0: continue
         print(colorstr("green", f"Class [{classes[ln]}]:"), 
             f"{pred_ans[ln]/true_cnts[ln]:.4f}", f"({pred_ans[ln]}/{true_cnts[ln]})")
-    
-    # cm = confusion_matrix(y_true, y_pred, labels=[1,0])
-    # ax= plt.subplot()
-    # sns.heatmap(cm, annot=True, ax = ax, cmap='Blues', fmt="d")
-
-    # ax.set_title('Confusion Matrix')
-
-    # ax.set_xlabel('Predicted Labels')
-    # ax.set_ylabel('True Labels')
-
-    # ax.xaxis.set_ticklabels(['FAKE', 'REAL'])
-    # ax.yaxis.set_ticklabels(['FAKE', 'REAL'])
 
 
 def main(opt):

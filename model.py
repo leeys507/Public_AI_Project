@@ -51,19 +51,20 @@ class LSTM(nn.Module):
 
 class CNN1d(nn.Module):
     def __init__(self, vocab, vocab_size, embed_dim=512, n_filters=128, 
-        multiple_fc=4, class_num=3, dropout=0.4, kernel_sizes=[2]):
+        multiple_fc=4, class_num=3, dropout=0.4, kernel_sizes=[2, 3]):
         
         super().__init__()
         
         self.vocab = vocab
         self.vocab_size = vocab_size
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=1)
+        self.max_kernerl_size = max(kernel_sizes)
         
         self.convs = nn.ModuleList([
                                     nn.Conv1d(in_channels = embed_dim, 
                                               out_channels = n_filters, 
-                                              kernel_size = fs, padding=1)
-                                    for fs in kernel_sizes
+                                              kernel_size = k)
+                                    for k in kernel_sizes
                                     ])
         
         self.relu = nn.ReLU()
@@ -77,6 +78,10 @@ class CNN1d(nn.Module):
         #text_shape = [batch size, sent len]
         embedded = self.embedding(text)   
         #embedded_shape = [batch size, sent len, emb dim]
+
+        # pad for CNN kernel
+        if embedded.shape[1] < self.max_kernerl_size:
+            embedded = F.pad(embedded, (0, 0, 0, self.max_kernerl_size - embedded.shape[1]), value=0)
         
         embedded = embedded.permute(0, 2, 1)
         #embedded_shape = [batch size, emb dim, sent len]
@@ -108,7 +113,7 @@ class SpatialDropout(nn.Dropout2d):
 
 class Combination(nn.Module):
     def __init__(self, vocab, vocab_size, class_num=3, embed_dim=512, hidden_size=256, 
-                n_filters=128, d_prob=0.4, emb_vectors=None, mode="static", kernel_sizes=[2], spatial_drop=0.1):
+                n_filters=128, d_prob=0.4, emb_vectors=None, mode="static", kernel_sizes=[2, 3], spatial_drop=0.1):
         super(Combination, self).__init__()
         self.vocab = vocab
         self.vocab_size = vocab_size
@@ -118,6 +123,7 @@ class Combination(nn.Module):
         self.num_filters = n_filters
         self.num_classes = class_num
         self.hidden_dim = n_filters
+        self.max_kernerl_size = max(kernel_sizes)
         self.d_prob = d_prob
         self.mode = mode
         self.embedding = nn.Embedding(vocab_size, self.embedding_dim, padding_idx=1)
@@ -141,11 +147,11 @@ class Combination(nn.Module):
         x_emb = self.embedding(x)
         x_emb = self.embedding_dropout(x_emb)
         
-        # pad for CNN kernel 5
-        if x_emb.shape[1] < 5:
-            x_emb = F.pad(x_emb, (0, 0, 0, 5 - x_emb.shape[1]), value=0)
+        # pad for CNN kernel
+        if x_emb.shape[1] < self.max_kernerl_size:
+            x_emb = F.pad(x_emb, (0, 0, 0, self.max_kernerl_size - x_emb.shape[1]), value=0)
             
-        x = [F.relu(conv(x_emb.transpose(1, 2))) for conv in self.conv]
+        x = [self.relu(conv(x_emb.transpose(1, 2))) for conv in self.conv]
         x = [F.max_pool1d(c, c.size(-1)).squeeze(dim=-1) for c in x]
         x = torch.cat(x, dim=1)
         x = x.unsqueeze(0)
