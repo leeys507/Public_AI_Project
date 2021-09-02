@@ -238,7 +238,7 @@ def main(args):
         ("Car" in args.dataset and args.test_plate):
         plate_model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes, pretrained=args.pretrained,
                                                               **kwargs)
-        plate_checkpoint = torch.load("../../Desktop/weights/model_plate_60.pth", map_location='cpu')
+        plate_checkpoint = torch.load("../../Desktop/weights/car_detection/model_plate_60.pth", map_location='cpu')
         plate_model.load_state_dict(plate_checkpoint['model'])
         plate_model.to(device)
 
