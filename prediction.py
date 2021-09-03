@@ -6,12 +6,12 @@ from tarfile import ENCODING
 
 import torch
 
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from torchtext.legacy.data import TabularDataset, BucketIterator
 
 from model import LSTM, CNN1d, Combination
 from utils import colorstr
-from general import get_reverse_vocablulary_and_iter, get_text_field, get_vocablulary, sentence_prediction,\
+from general import PredictionDataset, create_pred_dataloader, get_reverse_vocablulary_and_iter, get_text_field, get_vocablulary, sentence_prediction,\
     save_checkpoint, save_metrics, load_checkpoint, load_pretrained_weights, load_metrics
 
 from eunjeon import Mecab
@@ -46,18 +46,6 @@ def parse_opt():
     opt = parser.parse_args()
     return opt
 
-
-class PredictionDataset(Dataset):
-    def __init__(self, data):
-        self.x = data
-
-    def __len__(self):
-        return len(self.x)
-
-    def __getitem__(self, idx):
-        x = self.x[idx]
-
-        return x
 
 def prediction_input_sentence(model, classes, device, cpu_device, tokenize, threshold=0.7, speech_paths=None):
     model.eval()
@@ -154,7 +142,6 @@ def main(opt):
     cpu_device = "cpu"
 
     classes = ["hello", "sorry", "thank", "emergency", "weather", "help", "buy", "negative", "season", "unknown"]
-    #classes = ["hello", "sorry", "thank"]
 
     print(colorstr("red", "bold", "Prediction: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
 
@@ -179,10 +166,7 @@ def main(opt):
                                         device, opt.batch_size, opt.word_min_freq)
         else:
             # load data
-            df_data = pd.read_csv(opt.source_path + opt.source_name, skiprows=0, encoding="utf-8")
-            text_data = df_data["text"].to_numpy()
-            pred_dataset = PredictionDataset(text_data)
-            pred_iter = DataLoader(pred_dataset, batch_size=opt.batch_size, shuffle=opt.shuffle_data)
+            pred_iter = create_pred_dataloader(opt.source_path + opt.source_name, opt.batch_size, opt.shuffle_data)
 
     # load vocab
     vocab, weight = load_pretrained_weights(opt.weights_save_path + "/" + opt.best_weight_save_name, device)

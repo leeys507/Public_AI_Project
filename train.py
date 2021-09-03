@@ -2,6 +2,7 @@ import time
 import datetime
 import os
 import argparse
+import pandas as pd
 import numpy as np
 
 import torch
@@ -14,8 +15,8 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 
 from model import LSTM, CNN1d, Combination
 from utils import colorstr, create_directory
-from general import create_split_csv, get_fields, get_datasets, get_iterators, get_vocablulary,\
-    save_checkpoint, save_metrics, load_checkpoint, load_metrics
+from general import create_custom_dataloader, create_split_csv, get_fields, get_datasets, get_iterators, get_test_iterator, get_vocablulary,\
+    save_checkpoint, save_metrics, load_checkpoint, load_metrics, sentence_prediction
 
 from eunjeon import Mecab
 
@@ -249,7 +250,6 @@ def main(opt):
     cpu_device = "cpu"
 
     classes = ["hello", "sorry", "thank", "emergency", "weather", "help", "buy", "negative", "season", "unknown"]
-    #classes = ["hello", "sorry", "thank"]
     label_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     if opt.test_only == False:
@@ -272,6 +272,9 @@ def main(opt):
     # data loader
     train_iter, valid_iter, test_iter = get_iterators(train_data, valid_data, test_data, 
         device, opt.train_batch_size, opt.valid_batch_size, opt.test_batch_size)
+    
+    # if opt.test_only or opt.test:
+    #     test_iter = create_custom_dataloader(opt.outputs_path + opt.test_data_save_name, opt.test_batch_size, opt.shuffle_data)
 
     # vocablulary 생성, 단어 정수 mapping
     #text_field.build_vocab(train_data, vectors=vv, min_freq=opt.word_min_freq)
@@ -296,10 +299,12 @@ def main(opt):
     
     if opt.test_only or opt.test:
         best_model = model_list[opt.model_name]
-        optimizer = optim.Adam(best_model.parameters(), lr=opt.lr)
 
         print(colorstr("red", "bold", "Test: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
-        load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, best_model, device, optimizer=optimizer, strict=False)
+        load_checkpoint(opt.weights_save_path + "/" + opt.best_weight_save_name, best_model, device, strict=False)
+
+        text_field.vocab = best_model.vocab
+        test_iter = get_test_iterator(opt.outputs_path + opt.test_data_save_name, fields, opt.test_batch_size, device)
         evaluate(best_model, test_iter, classes, label_numbers, device, cpu_device, threshold=opt.threshold)
 
 

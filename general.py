@@ -1,10 +1,58 @@
+from typing import Sequence
 import torch
 # from torchtext.data import Field, TabularDataset, BucketIterator
 from torchtext.legacy.data import Field, TabularDataset, BucketIterator, ReversibleField
+from torch.utils.data import Dataset, DataLoader
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+
+class PredictionDataset(Dataset):
+    def __init__(self, data):
+        self.x = data
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+        x = self.x[idx]
+
+        return x
+
+
+class Text_Dataset(Dataset):
+    def __init__(self, data, label):
+        self.x = data
+        self.y = label
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+        x = self.x[idx]
+        y = self.y[idx]
+
+        return x, y
+
+
+def create_pred_dataloader(source_path=".", batch_size=5, shuffle=True):
+    df_data = pd.read_csv(source_path, skiprows=0, encoding="utf-8")
+    text_data = df_data["text"].to_numpy()
+    dataset = PredictionDataset(text_data)
+    iter = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
+    return iter
+
+
+def create_custom_dataloader(source_path=".", batch_size=5, shuffle=True):
+    df_data = pd.read_csv(source_path, skiprows=0, encoding="utf-8")
+    text_data = df_data["text"].to_numpy()
+    text_label = df_data["label"].to_numpy()
+    dataset = Text_Dataset(text_data, text_label)
+    iter = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
+    return iter
 
 def create_split_csv(raw_data_path=".", dest_path=".", label_numbers=[0, 1, 2],
     train_csv_name="train.csv", valid_csv_name="valid.csv", test_csv_name="test.csv", 
@@ -14,7 +62,7 @@ def create_split_csv(raw_data_path=".", dest_path=".", label_numbers=[0, 1, 2],
     df_raw = pd.read_csv(raw_data_path, skiprows=skiprows, encoding=encoding)
 
     # 빈 텍스트 행 제거
-    df_raw.drop( df_raw[df_raw.text.str.len() < 1].index, inplace=True)
+    df_raw.drop(df_raw[df_raw.text.str.len() < 1].index, inplace=True)
 
     df_raw = df_raw.dropna()
 
@@ -90,6 +138,15 @@ def get_iterators(train_data, valid_data, test_data, device,
     return train_iter, valid_iter, test_iter
 
 
+def get_test_iterator(path, fields, batch_size, device):
+    test = TabularDataset(path=path, format='CSV', fields=fields, skip_header=True)
+
+    test_iter = BucketIterator(test, batch_size=batch_size, sort_key=lambda x: len(x.text),
+                        device=device, sort=True, sort_within_batch=True)
+
+    return test_iter
+
+
 # Vocabulary
 def get_vocablulary(text_field, train_data, min_freq=2):
     text_field.build_vocab(train_data, min_freq=min_freq)
@@ -148,6 +205,9 @@ def load_checkpoint(load_path, model, device, optimizer=None, strict=True):
     state_dict = torch.load(load_path, map_location=device)
     print(f'Model loaded from <== {load_path}')
     
+    model.vocab = state_dict['vocab']
+    model.vocab_size = state_dict['vocab_size']
+    model.embedding = state_dict['embedding']
     model.load_state_dict(state_dict['model_state_dict'], strict=strict)
 
     if optimizer is not None:
