@@ -11,6 +11,7 @@ classes = ["hello", "sorry", "thank", "emergency", "weather", <br>
 "help", "buy", "negative", "season", "unknown"]<br>
 default_path is "absoulte_path/Desktop/"<br>
 save model in default_path/weights<br>
+used model: LSTM, CNN, CNN-LSTM
 </div>
 
 ### Train
