@@ -5,7 +5,6 @@ from numpy import dtype
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-from torch.nn.functional import embedding
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
@@ -148,7 +147,7 @@ class Combination(nn.Module):
         if x_emb.shape[1] < self.max_kernerl_size:
             x_emb = F.pad(x_emb, (0, 0, 0, self.max_kernerl_size - x_emb.shape[1]), value=0)
             
-        x = [self.dropout(self.relu(conv(x_emb.transpose(1, 2)))) for conv in self.conv]
+        x = [self.relu(conv(x_emb.transpose(1, 2))) for conv in self.conv]
         x = [F.max_pool1d(c, c.size(-1)).squeeze(dim=-1) for c in x]
         x = torch.cat(x, dim=1)
         x = x.unsqueeze(0)

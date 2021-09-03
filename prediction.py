@@ -31,7 +31,7 @@ def parse_opt():
     parser.add_argument('--source-path', type=str, default=source_path, help='data source path')
     parser.add_argument('--source-name', type=str, default=source_name, help='source name')
     parser.add_argument('--model-name', type=str, default="LSTM", help='select model')
-    parser.add_argument('--random-seed', type=int, default=1, help='random seed')
+    parser.add_argument('--random-seed', type=int, default=7, help='random seed')
     parser.add_argument('--threshold', type=float, default=0.7, help='threshold')
     parser.add_argument('--batch-size', type=int, default=4, help='batch size')
     parser.add_argument('--word-min-freq', type=int, default=1, help='voca word min frequency')

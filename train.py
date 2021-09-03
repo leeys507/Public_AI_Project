@@ -40,7 +40,7 @@ def parse_opt():
     parser.add_argument('--test-data-save-name', type=str, default="test.csv", help='save test data name')
     parser.add_argument('--test-size', type=float, default=0.2, help='split test size')
     parser.add_argument('--valid-size', type=float, default=0.2, help='split valid size')
-    parser.add_argument('--random-seed', type=int, default=1, help='random seed')
+    parser.add_argument('--random-seed', type=int, default=7, help='random seed')
     parser.add_argument('--train-batch-size', type=int, default=16, help='train loader batch size')
     parser.add_argument('--valid-batch-size', type=int, default=5, help='valid loader batch size')
     parser.add_argument('--test-batch-size', type=int, default=5, help='test loader batch size')
@@ -230,8 +230,13 @@ def evaluate(model, test_loader, classes, label_numbers, device, cpu_device, thr
             y_pred.extend(output.tolist())
             y_true.extend(labels.tolist())
     
-    print(colorstr("Classification Report:"))
+    for i, pred in enumerate(y_pred):
+        if 1 not in pred:
+            y_pred[i][-1] = 1
+
     y_pred = np.argmax(y_pred, axis=1)
+
+    print(colorstr("Classification Report:"))
     print(classification_report(y_true, y_pred, labels=label_numbers, digits=4))
     
     for pred, true in zip(y_pred, y_true):

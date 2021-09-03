@@ -1,3 +1,4 @@
+from random import shuffle
 from typing import Sequence
 import torch
 # from torchtext.data import Field, TabularDataset, BucketIterator
@@ -61,6 +62,8 @@ def create_split_csv(raw_data_path=".", dest_path=".", label_numbers=[0, 1, 2],
     # Read raw data
     df_raw = pd.read_csv(raw_data_path, skiprows=skiprows, encoding=encoding)
 
+    # df_raw["text"] = df_raw["text"].str.replace(pat=r'[\'\,\.\?\!]', repl=r'', regex=True)
+
     # 빈 텍스트 행 제거
     df_raw.drop(df_raw[df_raw.text.str.len() < 1].index, inplace=True)
 
@@ -80,9 +83,9 @@ def create_split_csv(raw_data_path=".", dest_path=".", label_numbers=[0, 1, 2],
             continue
 
         # Train-test split
-        df_full_train, df_test = train_test_split(df_label, test_size = test_size, random_state = random_seed)
+        df_full_train, df_test = train_test_split(df_label, test_size=test_size, random_state=random_seed, shuffle=True)
         # Train-valid split
-        df_train, df_valid = train_test_split(df_full_train, test_size = valid_size, random_state = random_seed)
+        df_train, df_valid = train_test_split(df_full_train, test_size=valid_size, random_state=random_seed, shuffle=True)
 
         # Concatenate splits of different labels
         df_split_train = pd.concat([df_split_train, df_train], ignore_index=True, sort=False)
