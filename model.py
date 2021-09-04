@@ -9,12 +9,15 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
 class LSTM(nn.Module):
-    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=512, multiple_fc=4, dropout=0.5):
+    def __init__(self, vocab, vocab_size, class_num=3, dimension=128, embed_dim=512, 
+        multiple_fc=4, dropout=0.5, spatial_drop=0.1):
+        
         super(LSTM, self).__init__()
 
         self.vocab = vocab
         self.vocab_size = vocab_size
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=1)
+        self.embedding_dropout = SpatialDropout(p=spatial_drop)
         self.dimension = dimension
         
         self.lstm = nn.LSTM(input_size=embed_dim,
@@ -32,6 +35,7 @@ class LSTM(nn.Module):
     def forward(self, text, text_len):
 
         text_emb = self.embedding(text)
+        text_emb = self.embedding_dropout(text_emb)
 
         packed_input = pack_padded_sequence(text_emb, text_len, batch_first=True, enforce_sorted=False)
         packed_output, _ = self.lstm(packed_input)
@@ -50,13 +54,14 @@ class LSTM(nn.Module):
 
 class CNN1d(nn.Module):
     def __init__(self, vocab, vocab_size, embed_dim=512, n_filters=128, 
-        multiple_fc=4, class_num=3, dropout=0.4, kernel_sizes=[2, 3]):
+        multiple_fc=4, class_num=3, dropout=0.4, kernel_sizes=[2, 3], spatial_drop=0.1):
         
         super().__init__()
         
         self.vocab = vocab
         self.vocab_size = vocab_size
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=1)
+        self.embedding_dropout = SpatialDropout(p=spatial_drop)
         self.max_kernerl_size = max(kernel_sizes)
         
         self.convs = nn.ModuleList([
@@ -77,6 +82,7 @@ class CNN1d(nn.Module):
         #text_shape = [batch size, sent len]
         embedded = self.embedding(text)   
         #embedded_shape = [batch size, sent len, emb dim]
+        embedded = self.embedding_dropout(embedded)
 
         # pad for CNN kernel
         if embedded.shape[1] < self.max_kernerl_size:
@@ -98,16 +104,6 @@ class CNN1d(nn.Module):
         out = self.fc2(out)
         
         return out
-
-
-class SpatialDropout(nn.Dropout2d):
-    def forward(self, x):
-        x = x.unsqueeze(2)    # (N, T, 1, K)
-        x = x.permute(0, 3, 2, 1)  # (N, K, 1, T)
-        x = super(SpatialDropout, self).forward(x)  # (N, K, 1, T), some features are masked
-        x = x.permute(0, 3, 2, 1)  # (N, T, 1, K)
-        x = x.squeeze(2)  # (N, T, K)
-        return x
 
 
 class Combination(nn.Module):
@@ -159,3 +155,13 @@ class Combination(nn.Module):
         out = self.fc_final(out)
 
         return out
+
+
+class SpatialDropout(nn.Dropout2d):
+    def forward(self, x):
+        x = x.unsqueeze(2)    # (N, T, 1, K)
+        x = x.permute(0, 3, 2, 1)  # (N, K, 1, T)
+        x = super(SpatialDropout, self).forward(x)  # (N, K, 1, T), some features are masked
+        x = x.permute(0, 3, 2, 1)  # (N, T, 1, K)
+        x = x.squeeze(2)  # (N, T, K)
+        return x
