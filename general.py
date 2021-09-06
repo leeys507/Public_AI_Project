@@ -151,12 +151,12 @@ def get_test_iterator(path, fields, batch_size, device):
 
 
 # Vocabulary
-def get_vocablulary(text_field, train_data, min_freq=2):
+def get_vocabulary(text_field, train_data, min_freq=2):
     text_field.build_vocab(train_data, min_freq=min_freq)
     return text_field
 
 
-def get_reverse_vocablulary_and_iter(source_path, tokenize, device, batch_size, word_min_freq):
+def get_reverse_vocabulary_and_iter(source_path, tokenize, device, batch_size, word_min_freq):
     rev_field = ReversibleField(tokenize=tokenize, lower=True, include_lengths=True, batch_first=True)
     rev_fields = [('text', rev_field)]
 
