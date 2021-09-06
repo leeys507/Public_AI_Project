@@ -30,4 +30,5 @@ python prediction.py --shuffle-data --input-speech-paths <file paths>
 // Folder Path
 python prediction.py --shuffle-data --input-speech-folder ../datasets/clean_file --model-name CNN1d
 python prediction.py --shuffle-data --input-speech-folder ../test_speech --model-name Comb
+python prediction.py --shuffle-data --input-speech-folder ../../Desktop/ai_data/speech_text/test_speech --model-name Comb
 python prediction.py --input-speech-folder <folder path>

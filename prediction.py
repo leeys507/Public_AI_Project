@@ -11,11 +11,12 @@ from torchtext.legacy.data import TabularDataset, BucketIterator
 
 from model import LSTM, CNN1d, Combination
 from utils import colorstr
-from general import PredictionDataset, create_pred_dataloader, get_reverse_vocablulary_and_iter, get_text_field, get_vocablulary, sentence_prediction,\
+from general import PredictionDataset, create_pred_dataloader, get_reverse_vocabulary_and_iter, get_text_field, get_vocabulary, sentence_prediction,\
     save_checkpoint, save_metrics, load_checkpoint, load_pretrained_weights, load_metrics
 
 from eunjeon import Mecab
 from stt import *
+
 
 def parse_opt():
     default_path = os.path.join(os.path.expanduser('~'), 'Desktop/') # Desktop
@@ -160,9 +161,9 @@ def main(opt):
             pred_iter = BucketIterator(pred_data, batch_size=opt.batch_size, sort_key=lambda x: len(x.text),
                     device=device, sort=False, sort_within_batch=False, shuffle=opt.shuffle_data)
 
-            text_field = get_vocablulary(text_field, pred_data, min_freq=opt.word_min_freq)
+            text_field = get_vocabulary(text_field, pred_data, min_freq=opt.word_min_freq)
 
-            rev_field, rev_pred_iter = get_reverse_vocablulary_and_iter(opt.source_path + opt.source_name, m.morphs,
+            rev_field, rev_pred_iter = get_reverse_vocabulary_and_iter(opt.source_path + opt.source_name, m.morphs,
                                         device, opt.batch_size, opt.word_min_freq)
         else:
             # load data

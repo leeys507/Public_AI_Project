@@ -15,7 +15,7 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 
 from model import LSTM, CNN1d, Combination
 from utils import colorstr, create_directory
-from general import create_custom_dataloader, create_split_csv, get_fields, get_datasets, get_iterators, get_test_iterator, get_vocablulary,\
+from general import create_custom_dataloader, create_split_csv, get_fields, get_datasets, get_iterators, get_test_iterator, get_vocabulary,\
     save_checkpoint, save_metrics, load_checkpoint, load_metrics, sentence_prediction
 
 from eunjeon import Mecab
@@ -281,9 +281,9 @@ def main(opt):
     # if opt.test_only or opt.test:
     #     test_iter = create_custom_dataloader(opt.outputs_path + opt.test_data_save_name, opt.test_batch_size, opt.shuffle_data)
 
-    # vocablulary 생성, 단어 정수 mapping
+    # vocabulary 생성, 단어 정수 mapping
     #text_field.build_vocab(train_data, vectors=vv, min_freq=opt.word_min_freq)
-    text_field = get_vocablulary(text_field, train_data, opt.word_min_freq)
+    text_field = get_vocabulary(text_field, train_data, opt.word_min_freq)
 
     # use model list
     model_list = {
