@@ -146,6 +146,7 @@ class Combination(nn.Module):
         x = [self.relu(conv(x_emb.transpose(1, 2))) for conv in self.conv]
         x = [F.max_pool1d(c, c.size(-1)).squeeze(dim=-1) for c in x]
         x = torch.cat(x, dim=1)
+        x = self.dropout(x)
         x = x.unsqueeze(0)
 
         h_lstm, _ = self.lstm(x) # bidirectional lstm input shape (x 2)
