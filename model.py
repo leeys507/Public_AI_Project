@@ -98,6 +98,7 @@ class CNN1d(nn.Module):
         #pooled_n_shape = [batch size, n_filters]
         
         cat = torch.cat(pooled, dim = 1)
+        cat = self.drop(cat)
         #cat_shape = [batch size, n_filters * len(kernel_sizes)]
 
         out = self.drop(self.relu(self.fc(cat)))
