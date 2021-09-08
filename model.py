@@ -133,7 +133,7 @@ class Combination(nn.Module):
                              bidirectional=True, batch_first=True)
 
         self.dropout = nn.Dropout(p=d_prob)
-        self.fc = nn.Linear(hidden_size * 2, self.num_filters)
+        self.fc = nn.Linear(hidden_size * 2, self.num_filters) # bidirectional lstm input shape (x 2)
         self.fc_final = nn.Linear(self.num_filters, class_num)
 
     def forward(self, x, x_len):
@@ -150,7 +150,7 @@ class Combination(nn.Module):
         x = self.dropout(x)
         x = x.unsqueeze(0)
 
-        h_lstm, _ = self.lstm(x) # bidirectional lstm input shape (x 2)
+        h_lstm, _ = self.lstm(x)
 
         out = h_lstm.squeeze(0)
         out = self.dropout(self.relu(self.fc(out)))
