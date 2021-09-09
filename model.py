@@ -92,7 +92,7 @@ class CNN1d(nn.Module):
         #embedded_shape = [batch size, emb dim, sent len]
         
         conved = [self.relu(conv(embedded)) for conv in self.convs]
-        #conved_n_shape = [batch size, n_filters, len(kernel_sizes)]
+        #conved_n_shape = [batch size, n_filters, sent len - kernel size + 1]
         
         pooled = [torch.functional.F.max_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
         #pooled_n_shape = [batch size, n_filters]
