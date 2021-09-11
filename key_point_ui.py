@@ -9,6 +9,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from prediction import prediction
 import os
+from annotation import *
 
 class Ui_MainWindow(object):
     def __init__(self, **kwargs):
@@ -198,11 +199,11 @@ class Ui_MainWindow(object):
                 self.img_path_list = path_list
 
                 if (len(path_list) > self.img_batch_size):
-                    anno_pixmap_list = self.create_anno_pixmap(self.img_path_list[:self.img_batch_size])
-                    pred_pixmap_list = self.create_pred_pixmap(self.img_path_list[:self.img_batch_size])
+                    anno_pixmap_list, anno_img_info = self.create_anno_pixmap(self.img_path_list[:self.img_batch_size])
+                    pred_pixmap_list = self.create_pred_pixmap(self.img_path_list[:self.img_batch_size], anno_img_info)
                 else:
-                    anno_pixmap_list = self.create_anno_pixmap(self.img_path_list)
-                    pred_pixmap_list = self.create_pred_pixmap(self.img_path_list)
+                    anno_pixmap_list, anno_img_info = self.create_anno_pixmap(self.img_path_list)
+                    pred_pixmap_list = self.create_pred_pixmap(self.img_path_list, anno_img_info)
 
                 self.img_anno_list.extend(anno_pixmap_list)
                 self.img_pred_list.extend(pred_pixmap_list)
@@ -236,20 +237,32 @@ class Ui_MainWindow(object):
 
     def create_anno_pixmap(self, anno_img_path_list):
         anno_pixmap_list = []
+        anno_img_info = []
 
         for anno_img_path in anno_img_path_list:
-            pixmap = QtGui.QPixmap(anno_img_path)
+            annotation_image, frame, keypoints = anno_image(anno_img_path)
+            height, width, channel = annotation_image.shape
+            bytesPerLine = channel * width
+
+            anno_qimg = QtGui.QImage(annotation_image.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+            pixmap = QtGui.QPixmap(anno_qimg)
             smaller_anno_pixmap = pixmap.scaled(self.annoView.width(), self.annoView.height())
             # 비율 유지
             # smaller_pixmap = pixmap.scaled(self.annoView.width(), self.annoView.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.FastTransformation)
             anno_pixmap_list.append(smaller_anno_pixmap)
 
-        return anno_pixmap_list
+            info_dict = {
+                "frame": frame,
+                "keypoints": keypoints,
+            }
+            anno_img_info.append(info_dict)
+
+        return anno_pixmap_list, anno_img_info
 
 
-    def create_pred_pixmap(self, pred_img_path_list):
+    def create_pred_pixmap(self, pred_img_path_list, anno_img_info):
         pred_pixmap_list = []
-        pred_img_list = prediction(self.model, self.device, self.trf, pred_img_path_list)
+        pred_img_list = prediction(self.model, self.device, self.trf, pred_img_path_list, anno_img_info)
 
         for pred_img in pred_img_list:
             height, width, channel = pred_img.shape
