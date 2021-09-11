@@ -1,5 +1,5 @@
 import math
-from xml.etree.ElementTree import parse
+import json
 from datetime import datetime
 
 def get_threshold(keypoints, percentage): # get face width
@@ -8,23 +8,10 @@ def get_threshold(keypoints, percentage): # get face width
     threshold = abs(right[0] - left[0]) * percentage
     return threshold
 
-# Usage
-# sample_dict = get_dict_from_annotation()
-# sample_dict[os.path.basename(filepath)][keypoint_names[count]]
+# required json format
 def get_dict_from_annotation(annotation_path):
-    tree = parse(annotation_path)
-    root = tree.getroot()
-
-    images = root.findall("image")
-    result = dict()
-    for i, item in enumerate(images):
-        imgname = item.attrib['name']
-        point_dict = dict()
-        points = item.findall("points")
-        for pitem in points:
-            point_dict[pitem.attrib['label']] = pitem.attrib['points']
-
-        result[imgname] = point_dict
+    with open(annotation_path) as f:
+        result = json.load(f)
     return result
 
 def pck(anno, pred, threshold): # anno[0], pred[0] = x, anno[1], pred[1] = y
