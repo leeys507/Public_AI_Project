@@ -15,6 +15,7 @@ class Ui_MainWindow(object):
     def __init__(self, **kwargs):
         self.img_format = ("png", "jpg", "jpeg")
         self.video_format = ("mp4", "wmv", "avi")
+        self.mode = "img"
 
         self.img_path_list = None
         self.img_anno_list = []
@@ -27,7 +28,7 @@ class Ui_MainWindow(object):
         self.video_pred_list = []
         self.video_index = 0
         self.video_frame_index = 0
-        self.video_batch_size = 20
+        self.video_buffer_size = 20
 
         if "window" in kwargs:
             self.window = kwargs.get("window")
@@ -111,6 +112,54 @@ class Ui_MainWindow(object):
         self.predView.setLineWidth(1)
         self.predView.setText("")
         self.predView.setObjectName("predView")
+        self.videoBufferSizeTextEdit = QtWidgets.QTextEdit(self.centralwidget)
+        self.videoBufferSizeTextEdit.setGeometry(QtCore.QRect(150, 670, 131, 31))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.videoBufferSizeTextEdit.setFont(font)
+        self.videoBufferSizeTextEdit.setObjectName("videoBufferSizeTextEdit")
+        self.nextVideoButton = QtWidgets.QPushButton(self.centralwidget)
+        self.nextVideoButton.setGeometry(QtCore.QRect(260, 770, 221, 41))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.nextVideoButton.setFont(font)
+        self.nextVideoButton.setObjectName("nextVideoButton")
+        self.videoCountLabel = QtWidgets.QLabel(self.centralwidget)
+        self.videoCountLabel.setGeometry(QtCore.QRect(650, 790, 91, 31))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.videoCountLabel.setFont(font)
+        self.videoCountLabel.setObjectName("videoCountLabel")
+        self.videoBufferSizeLabel = QtWidgets.QLabel(self.centralwidget)
+        self.videoBufferSizeLabel.setGeometry(QtCore.QRect(20, 680, 131, 21))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.videoBufferSizeLabel.setFont(font)
+        self.videoBufferSizeLabel.setObjectName("videoBufferSizeLabel")
+        self.nextVideoFrameButton = QtWidgets.QPushButton(self.centralwidget)
+        self.nextVideoFrameButton.setGeometry(QtCore.QRect(1060, 670, 221, 41))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.nextVideoFrameButton.setFont(font)
+        self.nextVideoFrameButton.setObjectName("nextVideoFrameButton")
+        self.prevVideoFrameButton = QtWidgets.QPushButton(self.centralwidget)
+        self.prevVideoFrameButton.setGeometry(QtCore.QRect(1060, 720, 221, 41))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.prevVideoFrameButton.setFont(font)
+        self.prevVideoFrameButton.setObjectName("prevVideoFrameButton")
+        self.label = QtWidgets.QLabel(self.centralwidget)
+        self.label.setGeometry(QtCore.QRect(20, 700, 211, 41))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label.setFont(font)
+        self.label.setObjectName("label")
+        self.previousVideoButton = QtWidgets.QPushButton(self.centralwidget)
+        self.previousVideoButton.setGeometry(QtCore.QRect(20, 770, 221, 41))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.previousVideoButton.setFont(font)
+        self.previousVideoButton.setObjectName("previousVideoButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1344, 21))
@@ -123,12 +172,18 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.actionOpen_Image_Folder = QtWidgets.QAction(MainWindow)
         font = QtGui.QFont()
-        font.setPointSize(8)
+        font.setPointSize(10)
         self.actionOpen_Image_Folder.setFont(font)
         self.actionOpen_Image_Folder.setObjectName("actionOpen_Image_Folder")
         self.actionOpen_Video_Folder = QtWidgets.QAction(MainWindow)
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.actionOpen_Video_Folder.setFont(font)
         self.actionOpen_Video_Folder.setObjectName("actionOpen_Video_Folder")
         self.actionExit = QtWidgets.QAction(MainWindow)
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.actionExit.setFont(font)
         self.actionExit.setObjectName("actionExit")
         self.menuMenu.addAction(self.actionOpen_Image_Folder)
         self.menuMenu.addAction(self.actionOpen_Video_Folder)
@@ -138,6 +193,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.center(MainWindow)
         self.add_event()
+        self.hide_contents()
 
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -151,6 +207,18 @@ class Ui_MainWindow(object):
         self.countLabel.setText(_translate("MainWindow", "N / N"))
         self.label_2.setText(_translate("MainWindow", "Annotation"))
         self.label_3.setText(_translate("MainWindow", "Prediction"))
+        self.videoBufferSizeTextEdit.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"</style></head><body style=\" font-family:\'MS Shell Dlg 2\'; font-size:12pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">20</p></body></html>"))
+        self.nextVideoButton.setText(_translate("MainWindow", "Next Video"))
+        self.videoCountLabel.setText(_translate("MainWindow", "N / N"))
+        self.videoBufferSizeLabel.setText(_translate("MainWindow", "Video Buffer Size"))
+        self.nextVideoFrameButton.setText(_translate("MainWindow", "Next Video Frame"))
+        self.prevVideoFrameButton.setText(_translate("MainWindow", "Previous Video Frame"))
+        self.label.setText(_translate("MainWindow", "Applies only when opening a video"))
+        self.previousVideoButton.setText(_translate("MainWindow", "Previous Video"))
         self.menuMenu.setTitle(_translate("MainWindow", "Menu"))
         self.actionOpen_Image_Folder.setText(_translate("MainWindow", "Open Image Folder"))
         self.actionOpen_Video_Folder.setText(_translate("MainWindow", "Open Video Folder"))
@@ -174,30 +242,41 @@ class Ui_MainWindow(object):
 
 
     def next_button_clicked(self):
-        if self.img_index != 0 and self.img_index % self.img_batch_size == 0:
-            anno_pixmap_list, anno_img_info = self.create_anno_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size])
-            pred_pixmap_list = self.create_pred_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size], anno_img_info)
-            self.img_anno_list.extend(anno_pixmap_list)
-            self.img_pred_list.extend(pred_pixmap_list)
-            
+        if self.mode == "img":
+            if self.img_index != 0 and self.img_index % self.img_batch_size == 0:
+                anno_pixmap_list, anno_img_info = self.create_anno_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size])
+                pred_pixmap_list = self.create_pred_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size], anno_img_info)
+                self.img_anno_list.extend(anno_pixmap_list)
+                self.img_pred_list.extend(pred_pixmap_list)
+                
 
-        if self.img_anno_list is not None and self.img_index < len(self.img_anno_list) - 1:
-            self.img_index += 1
-            self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
+            if self.img_anno_list is not None and self.img_index < len(self.img_anno_list) - 1:
+                self.img_index += 1
+                self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
+        else: # video
+            pass
 
 
     def prev_button_clicked(self):
-        if self.img_index > 0 and self.img_anno_list is not None:
-            self.img_index -= 1
-            self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
+        if self.mode == "img":
+            if self.img_index > 0 and self.img_anno_list is not None:
+                self.img_index -= 1
+                self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
+        else:
+            pass
 
 
     def open_img_folder_clicked(self):
         default_path = os.path.join(os.path.expanduser('~'), 'Desktop/')
         fname = QtWidgets.QFileDialog.getExistingDirectory(self.window, 'Open Image Folder', default_path)
+        self.annoView.clear()
+        self.predView.clear()
 
         if fname:
             path_list = []
+
+            if self.img_path_list is not None:
+                self.img_resource_clear()
 
             for root, dirs, files in os.walk(fname):
                 for file in files:
@@ -218,14 +297,39 @@ class Ui_MainWindow(object):
                 self.img_pred_list.extend(pred_pixmap_list)
 
                 self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
+                self.hide_contents()
 
             else:
                 QtWidgets.QMessageBox.information(None, "이미지 파일 없음", "이미지 파일이 존재하지 않습니다", 
                     QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)
 
+            self.mode = "img"
+
 
     def open_video_folder_clicked(self):
-        pass
+        try:
+            buffer_size = int(self.videoBufferSizeTextEdit.toPlainText())
+            if buffer_size < 1 or buffer_size > 50:
+                QtWidgets.QMessageBox.information(None, "범위 제한", "buffer 범위는 1 ~ 50 입니다", 
+                    QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)
+                return
+        except Exception as e:
+                QtWidgets.QMessageBox.information(None, "오류", "1 ~ 50 사이의 숫자만 입력하세요",
+                    QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)
+                return
+
+        if self.img_path_list is not None:
+            self.img_resouce_clear()
+
+        default_path = os.path.join(os.path.expanduser('~'), 'Desktop/')
+        fname = QtWidgets.QFileDialog.getExistingDirectory(self.window, 'Open Video Folder', default_path)
+        self.annoView.clear()
+        self.predView.clear()
+
+        self.mode = "video"
+        self.countLabel.setText("N / N")
+        self.countLabel.adjustSize()
+        self.show_contents()
 
 
     def changePixmap(self, img):
@@ -283,3 +387,39 @@ class Ui_MainWindow(object):
             pred_pixmap_list.append(smaller_pred_pixmap)
 
         return pred_pixmap_list
+
+    
+    def hide_contents(self):
+        self.videoBufferSizeLabel.hide()
+        self.videoBufferSizeTextEdit.hide()
+        self.label.hide()
+        self.previousVideoButton.hide()
+        self.nextVideoButton.hide()
+        self.videoCountLabel.hide()
+        self.nextVideoFrameButton.hide()
+        self.prevVideoFrameButton.hide()
+
+
+    def show_contents(self):
+        self.videoBufferSizeLabel.show()
+        self.videoBufferSizeTextEdit.show()
+        self.label.show()
+        self.previousVideoButton.show()
+        self.nextVideoButton.show()
+        self.videoCountLabel.show()
+        self.nextVideoFrameButton.show()
+        self.prevVideoFrameButton.show()
+
+
+    def img_resource_clear(self):
+        self.img_path_list.clear()
+        self.img_anno_list.clear()
+        self.img_pred_list.clear()
+        self.img_index = 0
+        self.nameLabel.setText("None")
+        self.nameLabel.adjustSize()
+
+
+    def video_resource_clear(self):
+        self.nameLabel.setText("None")
+        self.nameLabel.adjustSize()
