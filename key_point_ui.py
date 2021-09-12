@@ -7,7 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from prediction import prediction
+from prediction import img_prediction, video_prediction
 import os
 from annotation import *
 from video_control import VideoFile
@@ -26,6 +26,10 @@ class Ui_MainWindow(object):
         self.img_batch_size = 10
 
         self.video_path_list = None
+
+        self.video_prev_anno_list = [] # buffer
+        self.video_prev_pred_list = []
+
         self.video_anno_list = []
         self.video_pred_list = []
         self.video_index = 0
@@ -335,7 +339,7 @@ class Ui_MainWindow(object):
 
             if len(path_list) != 0:
                 self.video_path_list = path_list
-                self.current_video_file = VideoFile(self.video_path_list[self.video_index], self.video_buffer_size, self.video_buffer_size)
+                self.current_video_file = VideoFile(self.video_path_list[self.video_index], self.video_buffer_size)
 
         self.mode = "video"
         self.countLabel.setText("N / N")
@@ -383,10 +387,36 @@ class Ui_MainWindow(object):
 
         return anno_pixmap_list, anno_img_info
 
+    
+    def create_anno_video_pixmap(self, anno_video_path):
+        anno_pixmap_list = []
+        anno_img_info = []
+
+        annotation_image_list, frame_list, keypoints_list = anno_video(anno_video_path)
+
+        for annotation_image, frame, keypoints in zip(annotation_image_list, frame_list, keypoints_list):
+            height, width, channel = annotation_image.shape
+            bytesPerLine = channel * width
+
+            anno_qimg = QtGui.QImage(annotation_image.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+            pixmap = QtGui.QPixmap(anno_qimg)
+            smaller_anno_pixmap = pixmap.scaled(self.annoView.width(), self.annoView.height())
+            # 비율 유지
+            # smaller_pixmap = pixmap.scaled(self.annoView.width(), self.annoView.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.FastTransformation)
+            anno_pixmap_list.append(smaller_anno_pixmap)
+
+            info_dict = {
+                "frame": frame,
+                "keypoints": keypoints,
+            }
+            anno_img_info.append(info_dict)
+
+        return anno_pixmap_list, anno_img_info
+
 
     def create_pred_pixmap(self, pred_img_path_list, anno_img_info):
         pred_pixmap_list = []
-        pred_img_list = prediction(self.model, self.device, self.trf, pred_img_path_list, anno_img_info)
+        pred_img_list = img_prediction(self.model, self.device, self.trf, pred_img_path_list, anno_img_info)
 
         for pred_img in pred_img_list:
             height, width, channel = pred_img.shape
@@ -398,6 +428,10 @@ class Ui_MainWindow(object):
             pred_pixmap_list.append(smaller_pred_pixmap)
 
         return pred_pixmap_list
+
+
+    def create_pred_video_pixmap(self, pred):
+        pass
 
     
     def hide_contents(self):
