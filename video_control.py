@@ -51,16 +51,24 @@ class VideoFile:
         self.fp = cv2.VideoCapture(filePath)
         self.buffer = CircularQ(bufferSize)
         self.frameSkip = frameSkip
+        # self.fps = self.fp.get(cv2.CAP_PROP_FPS)
+        # self.width = self.fp.get(cv2.CAP_PROP_FRAME_WIDTH)
+        # self.height = self.fp.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        # self.frames = self.fp.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.current = 0
 
     def __del__(self):
         self.fp.release()
     
     def readFrame(self):
         ret, frame = self.fp.read()
+        self.current += 1
         if ret == False:
             return False
         for i in range(0, self.frameSkip):
-            ret, dump = self.fp.read()
+            # ret, dump = self.fp.read()
+            self.current += self.frameSkip
+            self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current)
         self.buffer.EnQ(frame)
         return frame
     
@@ -72,4 +80,4 @@ class VideoFile:
 
     def isOpened(self):
         return self.fp.isOpened()
-        
+    
