@@ -1,8 +1,9 @@
 import cv2
 from pck_utils import *
+from video_control import VideoFile
 
 # Key Point THRESHOLD
-THRESHOLD = 0.9
+THRESHOLD = 0.92
 
 # keypoint names 정하는것입니다. 각 keypoint 마다 라벨링 필요
 # 아래와 같은 라벨 정보를 가짐.
@@ -102,20 +103,19 @@ def img_prediction(model, device, trf, img_path_list, anno_img_info):
             #     exit()
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             pred_img_list.append(img)
+            break
 
         count = 0
 
     return pred_img_list
 
 
-def video_prediction(model, device, trf, cv_img_list, anno_img_info):
+def video_prediction(model, device, trf, file_path, frame_list, cv_img_list, anno_img_info):
     img_list = []
-    cv_img_list = []
     pred_img_list = []
 
     for img_cv in cv_img_list:
         input_img = trf(img_cv).to(device)
-        cv_img_list.append(img_cv)
         img_list.append(input_img)
 
     # model -> input image
@@ -124,7 +124,7 @@ def video_prediction(model, device, trf, cv_img_list, anno_img_info):
     # 초기값
     count = 0
 
-    for img_path, out, cv_img, anno_info in zip(img_path_list, out_list, cv_img_list, anno_img_info):
+    for frame_list, out, cv_img, anno_info in zip(frame_list, out_list, cv_img_list, anno_img_info):
         for box, score, keypoints in zip(out['boxes'], out['scores'], out['keypoints']):
 
             score = score.detach().to(device)
@@ -157,9 +157,13 @@ def video_prediction(model, device, trf, cv_img_list, anno_img_info):
                 if pck([anno_x, anno_y], [k_x, k_y], pck_threshold):
                     color = (0, 255, 0)
                 else:
+                    file_name = file_path.split("\\")[-1].split(".")[-2]
+                    fp = file_path.split("\\")
+                    fp = "\\".join(fp[:len(fp)-1])
+                    name = fp + "/" + file_name + "_" + str(frame_list)
                     color = (0, 0, 255)
-                    save_incorrect_point(os.path.dirname(img_path), os.path.dirname(img_path),
-                                         os.path.basename(img_path), anno_frame, keypoint_names[count])
+                    save_incorrect_point(os.path.dirname(name), os.path.dirname(name),
+                                         os.path.basename(name), anno_frame, keypoint_names[count])
 
                 img = cv2.circle(img, (k_x, k_y), 5, color, -1)
 
@@ -174,6 +178,10 @@ def video_prediction(model, device, trf, cv_img_list, anno_img_info):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
                     count = count + 1
+
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            pred_img_list.append(img)
+            break
 
         count = 0
 

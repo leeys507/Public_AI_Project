@@ -49,6 +49,7 @@ class CircularQ:
 class VideoFile:
     def __init__(self, filePath='./video_01/video_01.mp4', bufferSize=20):
         self.fp = cv2.VideoCapture(filePath)
+        self.file_path = filePath
         # self.buffer = CircularQ(bufferSize)
         self.buffer_size = bufferSize
         self.buffer = [0] * bufferSize
@@ -73,6 +74,7 @@ class VideoFile:
     
     def readFrame(self):
         self.buffer = self.current_frame # 버퍼 복사
+        self.current_frame_length = 0
         self.current += 1
         self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current) # 프레임 위치 설정
 

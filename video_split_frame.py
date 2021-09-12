@@ -4,7 +4,7 @@ import os
 # 동영상 가져오는 부분
 # cap = cv2.VideoCapture("../요가영상/video_01/video_01.mp4")
 video_file_name = "video_01.mp4"
-cap = cv2.VideoCapture("../../Desktop/ai_data\key_point/video/" + video_file_name)
+cap = cv2.VideoCapture("../../Desktop/ai_data\key_point/video/video_01/" + video_file_name)
 
 # 각 이미지의 프레임 수 확인
 width = cap.get(cv2.CAP_PROP_FRAME_WIDTH) # 또는 cap.get(3)

@@ -64,13 +64,13 @@ def anno_video(annotation_path, video : VideoFile, start_frame, buffer_size):
 
     anno_video_list = []
 
-    bbox_list = result["annotations"][start_frame:start_frame + buffer_size]["bbox"][0]
-    keypoints_list = result["annotations"][start_frame:start_frame + buffer_size]["keypoints"]
-    frame_list = int(result["annotations"][start_frame:start_frame + buffer_size]["frame"])
+    bbox_list = [x["bbox"][0] for x in result["annotations"][start_frame:start_frame + buffer_size]]
+    keypoints_list = [x["keypoints"] for x in result["annotations"][start_frame:start_frame + buffer_size]]
+    frame_list = [int(x["frame"]) for x in result["annotations"][start_frame:start_frame + buffer_size]]
 
     count = 0
-    for i, bbox, keypoints, frame in zip(bbox_list, keypoints_list, frame_list, range(video.current_frame_length)):
-        img = video.current_frame[i]
+    for i, bbox, keypoints in zip(range(video.current_frame_length), bbox_list, keypoints_list):
+        img = video.current_frame[i].copy()
 
         img = cv2.rectangle(img,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 0, 255), 3)
         for key in keypoints:

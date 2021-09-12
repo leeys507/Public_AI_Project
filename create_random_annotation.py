@@ -23,7 +23,7 @@ trf = transforms.Compose([
 video_file_name = "video_01.mp4"
 
 # json file 생성을 위한 시작 단계 작성
-anno_f = open('annotation.json', 'wt')
+anno_f = open('annotations.json', 'wt')
 anno_f.write('{\n')
 anno_f.write(f'\t\"filename\": \"{video_file_name}\",\n')        # 사용할 비디오에 맞게 수정
 anno_f.write('\t\"width\": ' + str(int(width)) + ',\n')
@@ -115,14 +115,13 @@ for file_nbr in order:
         # print(keypoint_names)
 
         anno_f.write('\t\t\t\"keypoints\": [\n')
-        anno_f.write('\t\t\t\t[\n')
         for i, key in enumerate(keypoints):
             # key 변수 값 : ex) tensor([925.8165, 331.7721,   1.0000])
             # tensor([925.8165, 331.7721,   1.0000]) : x 좌표, y 좌표 , 스코어
             if random.randrange(1, 101) <= 30:
                 key[0] += random.randrange(30, 41)
                 key[1] += random.randrange(30, 41)
-            anno_f.write('\t\t\t\t\t[' + str(int(key[0])) + ', ' + str(int(key[1])) + ('],\n' if i != len(keypoints) - 1 else "]\n"))
+            anno_f.write('\t\t\t\t[' + str(int(key[0])) + ', ' + str(int(key[1])) + ('],\n' if i != len(keypoints) - 1 else "]\n"))
 
             k_x = int(key[0])
             k_y = int(key[1])
@@ -141,7 +140,6 @@ for file_nbr in order:
 
                 count = count + 1
 
-        anno_f.write('\t\t\t\t]\n')
         anno_f.write('\t\t\t]\n')
         anno_f.write('\t\t},\n' if file_nbr != len(order) else '\t\t}\n')
         # 이미지에 각 포인트를cv2.imshow("keypoint image show", img)

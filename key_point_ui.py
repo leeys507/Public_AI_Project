@@ -32,9 +32,10 @@ class Ui_MainWindow(object):
 
         self.video_anno_list = []
         self.video_pred_list = []
+        self.video_file_index = 0
         self.video_index = 0
-        self.video_frame_index = 0
-        self.video_buffer_size = 20
+        self.video_start_frame_index = 0
+        self.video_buffer_size = 10
 
         if "window" in kwargs:
             self.window = kwargs.get("window")
@@ -260,7 +261,9 @@ class Ui_MainWindow(object):
                 self.img_index += 1
                 self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
         else: # video
-            pass
+            if self.video_anno_list is not None and self.video_index < len(self.video_anno_list) - 1:
+                self.video_index += 1
+                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index])
 
 
     def prev_button_clicked(self):
@@ -269,7 +272,9 @@ class Ui_MainWindow(object):
                 self.img_index -= 1
                 self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
         else:
-            pass
+            if self.video_index > 0 and self.video_anno_list is not None:
+                self.video_index -= 1
+                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index])
 
 
     def open_img_folder_clicked(self):
@@ -338,13 +343,22 @@ class Ui_MainWindow(object):
                         path_list.append(os.path.join(root, file))
 
             if len(path_list) != 0:
+                self.mode = "video"
                 self.video_path_list = path_list
-                self.current_video_file = VideoFile(self.video_path_list[self.video_index], self.video_buffer_size)
+                self.current_video_file = VideoFile(self.video_path_list[self.video_file_index], self.video_buffer_size)
+                anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
 
-        self.mode = "video"
-        self.countLabel.setText("N / N")
-        self.countLabel.adjustSize()
-        self.show_contents()
+                anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
+                pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
+                
+                self.video_anno_list = anno_pixmap_list
+                self.video_pred_list = pred_pixmap_list
+
+                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index])
+                self.show_contents()
+
+                self.countLabel.setText(f"1 / {len(self.video_anno_list)}")
+                self.countLabel.adjustSize()
 
 
     def changePixmap(self, img):
@@ -353,11 +367,19 @@ class Ui_MainWindow(object):
 
 
     def show_image(self, anno_pixmap_img, pred_pixmap_img):
-        self.annoView.setPixmap(anno_pixmap_img)
-        self.predView.setPixmap(pred_pixmap_img)
+        if self.mode == "img":
+            self.annoView.setPixmap(anno_pixmap_img)
+            self.predView.setPixmap(pred_pixmap_img)
 
-        self.nameLabel.setText(self.img_path_list[self.img_index])
-        self.countLabel.setText(f"{self.img_index + 1} / {len(self.img_path_list)}")
+            self.nameLabel.setText(self.img_path_list[self.img_index])
+            self.countLabel.setText(f"{self.img_index + 1} / {len(self.img_path_list)}")
+
+        else:
+            self.annoView.setPixmap(anno_pixmap_img)
+            self.predView.setPixmap(pred_pixmap_img)
+
+            self.nameLabel.setText(self.video_path_list[self.video_file_index])
+            self.countLabel.setText(f"{self.video_index + 1} / {len(self.video_anno_list)}")
 
         self.nameLabel.adjustSize()
         self.countLabel.adjustSize()
@@ -392,7 +414,7 @@ class Ui_MainWindow(object):
         anno_pixmap_list = []
         anno_img_info = []
 
-        annotation_image_list, frame_list, keypoints_list = anno_video(anno_video_path)
+        annotation_image_list, frame_list, keypoints_list = anno_video(anno_video_path, self.current_video_file, self.video_start_frame_index, self.video_buffer_size)
 
         for annotation_image, frame, keypoints in zip(annotation_image_list, frame_list, keypoints_list):
             height, width, channel = annotation_image.shape
@@ -430,8 +452,22 @@ class Ui_MainWindow(object):
         return pred_pixmap_list
 
 
-    def create_pred_video_pixmap(self, pred):
-        pass
+    def create_pred_video_pixmap(self, anno_img_info):
+        pred_pixmap_list = []
+        frame_list = [x["frame"] for x in anno_img_info]
+        pred_img_list = video_prediction(self.model, self.device, self.trf, self.current_video_file.file_path, 
+                frame_list, self.current_video_file.current_frame[:self.current_video_file.current_frame_length], anno_img_info)
+
+        for pred_img in pred_img_list:
+            height, width, channel = pred_img.shape
+            bytesPerLine = channel * width
+
+            pred_qimg = QtGui.QImage(pred_img.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+            pred_pixmap = QtGui.QPixmap(pred_qimg)
+            smaller_pred_pixmap = pred_pixmap.scaled(self.annoView.width(), self.annoView.height())
+            pred_pixmap_list.append(smaller_pred_pixmap)
+
+        return pred_pixmap_list
 
     
     def hide_contents(self):
@@ -470,7 +506,7 @@ class Ui_MainWindow(object):
         self.video_anno_list.clear()
         self.video_pred_list.clear()
         self.video_index = 0
-        self.video_frame_index = 0
+        self.video_start_frame_index = 0
         self.nameLabel.setText("None")
         self.nameLabel.adjustSize()
 
