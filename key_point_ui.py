@@ -9,12 +9,16 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from prediction import prediction
 import os
+from img_annotation import *
 
 class Ui_MainWindow(object):
     def __init__(self, **kwargs):
         self.img_format = ("png", "jpg", "jpeg")
         self.img_path_list = None
+        self.img_anno_list = []
+        self.img_pred_list = []
         self.img_index = 0
+        self.img_batch_size = 10
 
         if "window" in kwargs:
             self.window = kwargs.get("window")
@@ -35,6 +39,7 @@ class Ui_MainWindow(object):
             self.trf = kwargs.get("trf")
         else:
             raise Exception("transform is not found")
+
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -62,7 +67,7 @@ class Ui_MainWindow(object):
         self.nameLabel.setFont(font)
         self.nameLabel.setObjectName("nameLabel")
         self.countLabel = QtWidgets.QLabel(self.centralwidget)
-        self.countLabel.setGeometry(QtCore.QRect(660, 750, 91, 21))
+        self.countLabel.setGeometry(QtCore.QRect(650, 750, 91, 21))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.countLabel.setFont(font)
@@ -77,7 +82,7 @@ class Ui_MainWindow(object):
         self.annoView.setText("")
         self.annoView.setObjectName("annoView")
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.label_2.setGeometry(QtCore.QRect(260, 630, 81, 21))
+        self.label_2.setGeometry(QtCore.QRect(290, 630, 81, 21))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.label_2.setFont(font)
@@ -127,6 +132,7 @@ class Ui_MainWindow(object):
 
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Key Point Prediction"))
@@ -141,6 +147,7 @@ class Ui_MainWindow(object):
         self.actionOpen_Video_Folder.setText(_translate("MainWindow", "Open Video Folder"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         MainWindow.setWindowIcon(QtGui.QIcon('img/key.png'))
+
 
     def center(self, MainWindow):
         pos = MainWindow.frameGeometry()
@@ -158,15 +165,22 @@ class Ui_MainWindow(object):
 
 
     def next_button_clicked(self):
-        if self.img_path_list is not None and self.img_index < len(self.img_path_list) - 1:
+        if self.img_index != 0 and self.img_index % self.img_batch_size == 0:
+            anno_pixmap_list = self.create_anno_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size])
+            pred_pixmap_list = self.create_pred_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size])
+            self.img_anno_list.extend(anno_pixmap_list)
+            self.img_pred_list.extend(pred_pixmap_list)
+            
+
+        if self.img_anno_list is not None and self.img_index < len(self.img_anno_list) - 1:
             self.img_index += 1
-            self.show_image()
+            self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
 
 
     def prev_button_clicked(self):
-        if self.img_index > 0 and self.img_path_list is not None:
+        if self.img_index > 0 and self.img_anno_list is not None:
             self.img_index -= 1
-            self.show_image()
+            self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
 
 
     def open_img_folder_clicked(self):
@@ -175,6 +189,7 @@ class Ui_MainWindow(object):
 
         if fname:
             path_list = []
+
             for root, dirs, files in os.walk(fname):
                 for file in files:
                     if file.endswith(self.img_format):
@@ -182,7 +197,18 @@ class Ui_MainWindow(object):
 
             if len(path_list) != 0:
                 self.img_path_list = path_list
-                self.show_image()
+
+                if (len(path_list) > self.img_batch_size):
+                    anno_pixmap_list, anno_img_info = self.create_anno_pixmap(self.img_path_list[:self.img_batch_size])
+                    pred_pixmap_list = self.create_pred_pixmap(self.img_path_list[:self.img_batch_size], anno_img_info)
+                else:
+                    anno_pixmap_list, anno_img_info = self.create_anno_pixmap(self.img_path_list)
+                    pred_pixmap_list = self.create_pred_pixmap(self.img_path_list, anno_img_info)
+
+                self.img_anno_list.extend(anno_pixmap_list)
+                self.img_pred_list.extend(pred_pixmap_list)
+
+                self.show_image(self.img_anno_list[self.img_index], self.img_pred_list[self.img_index])
 
             else:
                 QtWidgets.QMessageBox.information(None, "이미지 파일 없음", "이미지 파일이 존재하지 않습니다", 
@@ -198,23 +224,53 @@ class Ui_MainWindow(object):
         self.window.repaint() # repaint() will trigger the paintEvent(self, event), this way the new pixmap will be drawn on the label
 
 
-    def show_image(self):
-        pixmap = QtGui.QPixmap(self.img_path_list[self.img_index])
-        smaller_pixmap = pixmap.scaled(self.annoView.width(), self.annoView.height())
-        # 비율 유지
-        # smaller_pixmap = pixmap.scaled(self.annoView.width(), self.annoView.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.FastTransformation)
-        self.annoView.setPixmap(smaller_pixmap)
+    def show_image(self, anno_pixmap_img, pred_pixmap_img):
+        self.annoView.setPixmap(anno_pixmap_img)
+        self.predView.setPixmap(pred_pixmap_img)
 
-        img = prediction(self.model, self.device, self.trf, self.img_path_list[self.img_index])
-        
-        height, width, channel = img.shape
-        bytesPerLine = channel * width
-
-        pred_pixmap = QtGui.QImage(img.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
-        smaller_pred_pixmap = pred_pixmap.scaled(self.annoView.width(), self.annoView.height())
-        self.predView.setPixmap(QtGui.QPixmap(smaller_pred_pixmap))
         self.nameLabel.setText(self.img_path_list[self.img_index])
         self.countLabel.setText(f"{self.img_index + 1} / {len(self.img_path_list)}")
 
         self.nameLabel.adjustSize()
         self.countLabel.adjustSize()
+
+
+    def create_anno_pixmap(self, anno_img_path_list):
+        anno_pixmap_list = []
+        anno_img_info = []
+
+        for anno_img_path in anno_img_path_list:
+            annotation_image, frame, keypoints = anno_image(anno_img_path)
+            height, width, channel = annotation_image.shape
+            bytesPerLine = channel * width
+
+            anno_qimg = QtGui.QImage(annotation_image.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+            pixmap = QtGui.QPixmap(anno_qimg)
+            smaller_anno_pixmap = pixmap.scaled(self.annoView.width(), self.annoView.height())
+            # 비율 유지
+            # smaller_pixmap = pixmap.scaled(self.annoView.width(), self.annoView.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.FastTransformation)
+            anno_pixmap_list.append(smaller_anno_pixmap)
+
+            info_dict = {
+                "frame": frame,
+                "keypoints": keypoints,
+            }
+            anno_img_info.append(info_dict)
+
+        return anno_pixmap_list, anno_img_info
+
+
+    def create_pred_pixmap(self, pred_img_path_list, anno_img_info):
+        pred_pixmap_list = []
+        pred_img_list = prediction(self.model, self.device, self.trf, pred_img_path_list, anno_img_info)
+
+        for pred_img in pred_img_list:
+            height, width, channel = pred_img.shape
+            bytesPerLine = channel * width
+
+            pred_qimg = QtGui.QImage(pred_img.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+            pred_pixmap = QtGui.QPixmap(pred_qimg)
+            smaller_pred_pixmap = pred_pixmap.scaled(self.annoView.width(), self.annoView.height())
+            pred_pixmap_list.append(smaller_pred_pixmap)
+
+        return pred_pixmap_list

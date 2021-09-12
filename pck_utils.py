@@ -1,10 +1,11 @@
 import math
 import json
 from datetime import datetime
+import os
 
 def get_threshold(keypoints, percentage): # get face width
-    left = keypoints[3].cpu().numpy()  # left ear position
-    right = keypoints[4].cpu().numpy()  # right ear position
+    left = keypoints[3]  # left ear position
+    right = keypoints[4] # right ear position
     threshold = abs(right[0] - left[0]) * percentage
     return threshold
 
@@ -24,8 +25,10 @@ def pck(anno, pred, threshold): # anno[0], pred[0] = x, anno[1], pred[1] = y
     else: return False
 
 
-def save_incorrect_point(folder_path, filename, fail_label):
-    logname = "log.csv"
-    failpoint_str = f"{folder_path},{filename},{fail_label} fail,{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+def save_incorrect_point(save_folder, folder_path, filename, frame, fail_label):
+    logname = os.path.join(save_folder, filename.split(".")[0] + "_log.csv")
+    saved_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    failpoint_str = f"{folder_path},{filename},{frame},{fail_label} fail,{saved_time}\n"
+    print(f"log saved: {folder_path}, {filename}, {frame} frame, {fail_label} failed, {saved_time}")
     with open(logname, "a") as f:
         f.write(failpoint_str)
