@@ -10,12 +10,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from prediction import prediction
 import os
 from annotation import *
+from video_control import VideoFile
 
 class Ui_MainWindow(object):
     def __init__(self, **kwargs):
         self.img_format = ("png", "jpg", "jpeg")
         self.video_format = ("mp4", "wmv", "avi")
         self.mode = "img"
+        self.current_video_file = None
 
         self.img_path_list = None
         self.img_anno_list = []
@@ -300,8 +302,7 @@ class Ui_MainWindow(object):
                 self.hide_contents()
 
             else:
-                QtWidgets.QMessageBox.information(None, "이미지 파일 없음", "이미지 파일이 존재하지 않습니다", 
-                    QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)
+                show_messagebox("이미지 파일 없음", "이미지 파일이 존재하지 않습니다")
 
             self.mode = "img"
 
@@ -310,21 +311,31 @@ class Ui_MainWindow(object):
         try:
             buffer_size = int(self.videoBufferSizeTextEdit.toPlainText())
             if buffer_size < 1 or buffer_size > 50:
-                QtWidgets.QMessageBox.information(None, "범위 제한", "buffer 범위는 1 ~ 50 입니다", 
-                    QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)
+                show_messagebox("범위 제한", "buffer 범위는 1 ~ 50 입니다")
                 return
         except Exception as e:
-                QtWidgets.QMessageBox.information(None, "오류", "1 ~ 50 사이의 숫자만 입력하세요",
-                    QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)
-                return
-
-        if self.img_path_list is not None:
-            self.img_resouce_clear()
+            show_messagebox("오류", "1 ~ 50 사이의 숫자만 입력하세요")
+            return
 
         default_path = os.path.join(os.path.expanduser('~'), 'Desktop/')
         fname = QtWidgets.QFileDialog.getExistingDirectory(self.window, 'Open Video Folder', default_path)
         self.annoView.clear()
         self.predView.clear()
+
+        if fname:
+            path_list = []
+
+            if self.video_path_list is not None:
+                self.video_resource_clear()
+
+            for root, dirs, files in os.walk(fname):
+                for file in files:
+                    if file.endswith(self.video_format):
+                        path_list.append(os.path.join(root, file))
+
+            if len(path_list) != 0:
+                self.video_path_list = path_list
+                self.current_video_file = VideoFile(self.video_path_list[self.video_index], self.video_buffer_size, self.video_buffer_size)
 
         self.mode = "video"
         self.countLabel.setText("N / N")
@@ -421,5 +432,15 @@ class Ui_MainWindow(object):
 
 
     def video_resource_clear(self):
+        self.video_path_list.clear()
+        self.video_anno_list.clear()
+        self.video_pred_list.clear()
+        self.video_index = 0
+        self.video_frame_index = 0
         self.nameLabel.setText("None")
         self.nameLabel.adjustSize()
+
+
+def show_messagebox(title, text):
+    QtWidgets.QMessageBox.information(None, title, text, 
+        QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)

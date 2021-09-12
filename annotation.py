@@ -1,6 +1,7 @@
 import cv2
 from pck_utils import *
 import os
+from video_control import VideoFile
 
 keypoint_names = {
     0: 'nose',
@@ -55,3 +56,12 @@ def anno_image(img_path):
 
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img, frame, keypoints
+
+
+def anno_video(annotation_path, video : VideoFile, start_frame, buffer_size):
+    with open(annotation_path) as f:
+        result = json.load(f)
+
+    bbox_list = result["annotations"][start_frame:start_frame + buffer_size]["bbox"][0]
+    keypoint_list = result["annotations"][start_frame:start_frame + buffer_size]["keypoints"]
+    frame_list = int(result["annotations"][start_frame:start_frame + buffer_size]["frame"])
