@@ -14,11 +14,20 @@ from img_annotation import *
 class Ui_MainWindow(object):
     def __init__(self, **kwargs):
         self.img_format = ("png", "jpg", "jpeg")
+        self.video_format = ("mp4", "wmv", "avi")
+
         self.img_path_list = None
         self.img_anno_list = []
         self.img_pred_list = []
         self.img_index = 0
         self.img_batch_size = 10
+
+        self.video_path_list = None
+        self.video_anno_list = []
+        self.video_pred_list = []
+        self.video_index = 0
+        self.video_frame_index = 0
+        self.video_batch_size = 20
 
         if "window" in kwargs:
             self.window = kwargs.get("window")
@@ -166,8 +175,8 @@ class Ui_MainWindow(object):
 
     def next_button_clicked(self):
         if self.img_index != 0 and self.img_index % self.img_batch_size == 0:
-            anno_pixmap_list = self.create_anno_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size])
-            pred_pixmap_list = self.create_pred_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size])
+            anno_pixmap_list, anno_img_info = self.create_anno_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size])
+            pred_pixmap_list = self.create_pred_pixmap(self.img_path_list[self.img_index:self.img_index + self.img_batch_size], anno_img_info)
             self.img_anno_list.extend(anno_pixmap_list)
             self.img_pred_list.extend(pred_pixmap_list)
             

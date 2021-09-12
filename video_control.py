@@ -59,7 +59,7 @@ class VideoFile:
         ret, frame = self.fp.read()
         if ret == False:
             return False
-        for i in range(0,self.frameSkip):
+        for i in range(0, self.frameSkip):
             ret, dump = self.fp.read()
         self.buffer.EnQ(frame)
         return frame
