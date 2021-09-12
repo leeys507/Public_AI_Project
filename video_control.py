@@ -65,10 +65,10 @@ class VideoFile:
         self.current += 1
         if ret == False:
             return False
-        for i in range(0, self.frameSkip):
-            # ret, dump = self.fp.read()
-            self.current += self.frameSkip
-            self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current)
+        # for i in range(0, self.frameSkip):
+        #     ret, dump = self.fp.read()
+        self.current += self.frameSkip
+        self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current)
         self.buffer.EnQ(frame)
         return frame
     
