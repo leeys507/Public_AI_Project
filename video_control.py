@@ -47,7 +47,7 @@ class CircularQ:
 
 
 class VideoFile:
-    def __init__(self, filePath='./video_01/video_01.mp4', bufferSize=20):
+    def __init__(self, filePath='./video_01/video_01.mp4', bufferSize=20, start_idx=0):
         self.fp = cv2.VideoCapture(filePath)
         self.file_path = filePath
         # self.buffer = CircularQ(bufferSize)
@@ -61,13 +61,19 @@ class VideoFile:
         # self.frames = self.fp.get(cv2.CAP_PROP_FRAME_COUNT)
         self.current = 0
 
-        for i in range(self.buffer_size):
+        skip = 0
+        i = 0
+        while self.fp.isOpened() and i < self.buffer_size:
             ret, frame = self.fp.read()
             if ret == False:
                 break
+            if skip < start_idx:
+                skip += 1
+                continue
             self.current_frame[i] = frame
             self.current += 1
             self.current_frame_length += 1
+            i += 1
 
     def __del__(self):
         self.fp.release()

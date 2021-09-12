@@ -393,7 +393,7 @@ class Ui_MainWindow(object):
 
             self.nameLabel.setText(self.video_path_list[self.video_file_index])
             self.countLabel.setText(f"{self.video_index + 1} / {len(self.video_anno_list)}")
-            self.videoCountLabel.setText(f"{self.video_index + 1} / {total_frame}")
+            self.videoCountLabel.setText(f"{self.video_index + self.video_start_frame_index + 1} / {total_frame}")
 
         self.nameLabel.adjustSize()
         self.countLabel.adjustSize()
@@ -469,7 +469,7 @@ class Ui_MainWindow(object):
     def create_pred_video_pixmap(self, anno_img_info):
         pred_pixmap_list = []
         frame_list = [x["frame"] for x in anno_img_info]
-        pred_img_list = video_prediction(self.model, self.device, self.trf, self.current_video_file.file_path, 
+        pred_img_list = video_prediction(self.model, self.device, self.trf, self.current_video_file.file_path,
                 frame_list, self.current_video_file.current_frame[:self.current_video_file.current_frame_length], anno_img_info)
 
         for pred_img in pred_img_list:
@@ -579,11 +579,53 @@ class Ui_MainWindow(object):
         return
 
     def previous_frame_button_clicked(self):
-        print("previous frame button clicked")
+        if len(self.video_prev_anno_list) == 0 or \
+                self.video_start_frame_index - self.video_buffer_size < 0:
+            print("No Frames In Buffer")
+            return
+        self.video_anno_list = self.video_prev_anno_list
+        self.video_pred_list = self.video_prev_pred_list
+
+        self.video_prev_anno_list = []
+        self.video_prev_pred_list = []
+        self.video_start_frame_index -= self.video_buffer_size
+        self.video_index = 0
+
+        self.show_image(self.video_anno_list[self.video_index],
+                        self.video_pred_list[self.video_index],
+                        self.current_total_frame)
+
+        self.countLabel.setText(f"{self.video_index + 1} / {len(self.video_anno_list)}")
+        self.videoCountLabel.setText(
+            f"{self.video_index + self.video_start_frame_index + 1} / {self.current_total_frame}")
+        self.countLabel.adjustSize()
         return
 
     def next_frame_button_clicked(self):
-        print("next frame button clicked")
+        if self.video_start_frame_index + self.video_buffer_size > self.current_total_frame-1:
+            print("No More Next Frames")
+            return
+        self.video_prev_anno_list = self.video_anno_list
+        self.video_prev_pred_list = self.video_pred_list
+        self.video_start_frame_index += self.video_buffer_size
+        self.video_index = 0
+
+        self.current_video_file = VideoFile(self.video_path_list[self.video_file_index], self.video_buffer_size, self.video_start_frame_index)
+        anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
+
+        anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
+        pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
+
+        self.video_anno_list = anno_pixmap_list
+        self.video_pred_list = pred_pixmap_list
+
+        self.show_image(self.video_anno_list[self.video_index],
+                        self.video_pred_list[self.video_index],
+                        self.current_total_frame)
+
+        self.countLabel.setText(f"{self.video_index + 1} / {len(self.video_anno_list)}")
+        self.videoCountLabel.setText(f"{self.video_index + self.video_start_frame_index + 1} / {self.current_total_frame}")
+        self.countLabel.adjustSize()
         return
 
 def show_messagebox(title, text):
