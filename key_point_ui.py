@@ -5,6 +5,7 @@
 # Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
+import copy
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from prediction import img_prediction, video_prediction
@@ -36,6 +37,7 @@ class Ui_MainWindow(object):
         self.video_index = 0
         self.video_start_frame_index = 0
         self.video_buffer_size = 10
+        self.current_total_frame = 1
 
         if "window" in kwargs:
             self.window = kwargs.get("window")
@@ -246,6 +248,10 @@ class Ui_MainWindow(object):
         self.actionExit.triggered.connect(QtWidgets.qApp.quit)
         self.nextButton.clicked.connect(self.next_button_clicked)
         self.prevButton.clicked.connect(self.prev_button_clicked)
+        self.previousVideoButton.clicked.connect(self.previous_video_button_clicked)
+        self.nextVideoButton.clicked.connect(self.next_video_button_clicked)
+        self.prevVideoFrameButton.clicked.connect(self.previous_frame_button_clicked)
+        self.nextVideoFrameButton.clicked.connect(self.next_frame_button_clicked)
 
 
     def next_button_clicked(self):
@@ -263,7 +269,7 @@ class Ui_MainWindow(object):
         else: # video
             if self.video_anno_list is not None and self.video_index < len(self.video_anno_list) - 1:
                 self.video_index += 1
-                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index])
+                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index], self.current_total_frame)
 
 
     def prev_button_clicked(self):
@@ -274,7 +280,7 @@ class Ui_MainWindow(object):
         else:
             if self.video_index > 0 and self.video_anno_list is not None:
                 self.video_index -= 1
-                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index])
+                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index], self.current_total_frame)
 
 
     def open_img_folder_clicked(self):
@@ -348,6 +354,10 @@ class Ui_MainWindow(object):
                 self.video_path_list = path_list
                 self.current_video_file = VideoFile(self.video_path_list[self.video_file_index], self.video_buffer_size)
                 anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
+                with open(anno_path) as f:
+                    anno_json = json.load(f)
+
+                self.current_total_frame = anno_json['total_frame']
 
                 anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
                 pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
@@ -355,10 +365,12 @@ class Ui_MainWindow(object):
                 self.video_anno_list = anno_pixmap_list
                 self.video_pred_list = pred_pixmap_list
 
-                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index])
+                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index],
+                                self.current_total_frame)
                 self.show_contents()
 
                 self.countLabel.setText(f"1 / {len(self.video_anno_list)}")
+                self.videoCountLabel.setText(f"1 / {self.current_total_frame}")
                 self.countLabel.adjustSize()
 
 
@@ -367,7 +379,7 @@ class Ui_MainWindow(object):
         self.window.repaint() # repaint() will trigger the paintEvent(self, event), this way the new pixmap will be drawn on the label
 
 
-    def show_image(self, anno_pixmap_img, pred_pixmap_img):
+    def show_image(self, anno_pixmap_img, pred_pixmap_img, total_frame=1):
         if self.mode == "img":
             self.annoView.setPixmap(anno_pixmap_img)
             self.predView.setPixmap(pred_pixmap_img)
@@ -381,6 +393,7 @@ class Ui_MainWindow(object):
 
             self.nameLabel.setText(self.video_path_list[self.video_file_index])
             self.countLabel.setText(f"{self.video_index + 1} / {len(self.video_anno_list)}")
+            self.videoCountLabel.setText(f"{self.video_index + 1} / {total_frame}")
 
         self.nameLabel.adjustSize()
         self.countLabel.adjustSize()
@@ -511,6 +524,67 @@ class Ui_MainWindow(object):
         self.nameLabel.setText("None")
         self.nameLabel.adjustSize()
 
+
+    def previous_video_button_clicked(self):
+        if self.video_file_index == 0:
+            return
+        self.video_index = 0
+        self.video_start_frame_index = 0
+        self.video_file_index -= 1
+        self.current_video_file = VideoFile(self.video_path_list[self.video_file_index], self.video_buffer_size)
+        anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
+        with open(anno_path) as f:
+            anno_json = json.load(f)
+        self.current_total_frame = anno_json['total_frame']
+        anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
+        pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
+
+        self.video_anno_list = anno_pixmap_list
+        self.video_pred_list = pred_pixmap_list
+
+        self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index],
+                        self.current_total_frame)
+        self.show_contents()
+
+        self.countLabel.setText(f"1 / {len(self.video_anno_list)}")
+        self.videoCountLabel.setText(f"1 / {self.current_total_frame}")
+        self.countLabel.adjustSize()
+        return
+
+    def next_video_button_clicked(self):
+        if self.video_file_index == len(self.video_path_list)-1:
+            return
+        self.video_index = 0
+        self.video_start_frame_index = 0
+        self.video_file_index += 1
+        self.current_video_file = VideoFile(self.video_path_list[self.video_file_index], self.video_buffer_size)
+        anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
+        with open(anno_path) as f:
+            anno_json = json.load(f)
+        self.current_total_frame = anno_json['total_frame']
+
+        anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
+        pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
+
+        self.video_anno_list = anno_pixmap_list
+        self.video_pred_list = pred_pixmap_list
+
+        self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index],
+                        self.current_total_frame)
+        # self.show_contents()
+
+        self.countLabel.setText(f"1 / {len(self.video_anno_list)}")
+        self.videoCountLabel.setText(f"1 / {self.current_total_frame}")
+        self.countLabel.adjustSize()
+        return
+
+    def previous_frame_button_clicked(self):
+        print("previous frame button clicked")
+        return
+
+    def next_frame_button_clicked(self):
+        print("next frame button clicked")
+        return
 
 def show_messagebox(title, text):
     QtWidgets.QMessageBox.information(None, title, text, 
