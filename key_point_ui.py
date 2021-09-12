@@ -322,6 +322,7 @@ class Ui_MainWindow(object):
             if buffer_size < 1 or buffer_size > 50:
                 show_messagebox("범위 제한", "buffer 범위는 1 ~ 50 입니다")
                 return
+            self.video_buffer_size = buffer_size
         except Exception as e:
             show_messagebox("오류", "1 ~ 50 사이의 숫자만 입력하세요")
             return
