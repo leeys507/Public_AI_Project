@@ -9,7 +9,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from prediction import prediction
 import os
-from img_annotation import *
+from annotation import *
 
 class Ui_MainWindow(object):
     def __init__(self, **kwargs):
