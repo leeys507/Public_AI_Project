@@ -1,5 +1,4 @@
 import cv2
-import time
 
 class CircularQ:
     def __init__(self, size = 1):
