@@ -1,7 +1,7 @@
 import cv2
 
 class CircularQ:
-    def __init__(self, size = 1):
+    def __init__(self, size = 20):
         self.q = [None] * size
         self.len = size
         self.front = 0
