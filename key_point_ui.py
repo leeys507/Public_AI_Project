@@ -387,6 +387,9 @@ class Ui_MainWindow(object):
                 self.videoFileCountLabel.adjustSize()
                 self.prevVideoFrameButton.setDisabled(True)
 
+            else:
+                show_messagebox("영상 파일 없음", "영상 파일이 존재하지 않습니다")
+
 
     def changePixmap(self, img):
         self.pixmap = QtGui.QPixmap(img)
