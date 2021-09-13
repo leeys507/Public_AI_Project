@@ -614,6 +614,21 @@ class Ui_MainWindow(object):
         self.video_start_frame_index -= self.video_buffer_size
         self.video_index = 0
 
+        if self.new_prediction == False:
+            self.video_prev_anno_list = self.video_anno_list.copy()
+            self.video_prev_pred_list = self.video_pred_list.copy()
+
+            self.current_video_file.readPrevFrame()
+            anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
+
+            anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
+            pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
+
+            self.video_anno_list = anno_pixmap_list
+            self.video_pred_list = pred_pixmap_list
+        else:
+            self.new_prediction = False
+
         self.show_image(self.video_prev_anno_list[self.video_index],
                         self.video_prev_pred_list[self.video_index],
                         self.current_total_frame)
@@ -622,8 +637,7 @@ class Ui_MainWindow(object):
         self.videoCountLabel.setText(
             f"{self.video_start_frame_index + 1} / {self.current_total_frame}")
         self.countLabel.adjustSize()
-        self.prevVideoFrameButton.setDisabled(True)
-        self.new_prediction = False
+        #self.prevVideoFrameButton.setDisabled(True)
         return
 
 

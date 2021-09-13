@@ -81,7 +81,21 @@ class VideoFile:
     def readFrame(self):
         self.buffer = self.current_frame.copy() # 버퍼 복사
         self.current_frame_length = 0
-        self.current += 1
+        self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current) # 프레임 위치 설정
+
+        for i in range(self.buffer_size):
+            ret, frame = self.fp.read()
+            if ret == False:
+                break
+            self.current_frame[i] = frame
+            self.current += 1
+            self.current_frame_length += 1
+
+    
+    def readPrevFrame(self):
+        self.current -= self.buffer_size
+        self.buffer = self.current_frame.copy() # 버퍼 복사
+        self.current_frame_length = 0
         self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current) # 프레임 위치 설정
 
         for i in range(self.buffer_size):
