@@ -79,8 +79,9 @@ def img_prediction(model, device, trf, img_path_list, anno_img_info):
                     color = (0, 255, 0)
                 else:
                     color = (0, 0, 255)
+                    for_log = os.path.basename(img_path).split('.')[0]
                     save_incorrect_point(os.path.dirname(img_path), os.path.dirname(img_path),
-                                         os.path.basename(img_path), anno_frame, keypoint_names[count])
+                                         for_log, anno_frame, keypoint_names[count])
 
                 img = cv2.circle(img, (k_x, k_y), 5, color, -1)
 
@@ -162,8 +163,10 @@ def video_prediction(model, device, trf, file_path, frame_list, cv_img_list, ann
                     fp = "\\".join(fp[:len(fp)-1])
                     name = fp + "/" + file_name + "_" + str(frame_list)
                     color = (0, 0, 255)
+                    for_log = os.path.basename(name).split('.')[0].split('_')
+                    for_log = for_log[0]+'_'+for_log[1]
                     save_incorrect_point(os.path.dirname(name), os.path.dirname(name),
-                                         os.path.basename(name), anno_frame, keypoint_names[count])
+                                         for_log, anno_frame, keypoint_names[count])
 
                 img = cv2.circle(img, (k_x, k_y), 5, color, -1)
 

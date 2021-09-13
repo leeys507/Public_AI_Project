@@ -26,7 +26,7 @@ def pck(anno, pred, threshold): # anno[0], pred[0] = x, anno[1], pred[1] = y
 
 
 def save_incorrect_point(save_folder, folder_path, filename, frame, fail_label):
-    logname = os.path.join(save_folder, filename.split(".")[0] + "_log.csv")
+    logname = os.path.join(save_folder, filename + "_log.csv")
     saved_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     failpoint_str = f"{folder_path},{filename},{frame},{fail_label} fail,{saved_time}\n"
     print(f"log saved: {folder_path}, {filename}, {frame} frame, {fail_label} failed, {saved_time}")
