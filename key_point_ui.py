@@ -169,6 +169,12 @@ class Ui_MainWindow(object):
         font.setPointSize(12)
         self.previousVideoButton.setFont(font)
         self.previousVideoButton.setObjectName("previousVideoButton")
+        self.videoFileCountLabel = QtWidgets.QLabel(self.centralwidget)
+        self.videoFileCountLabel.setGeometry(QtCore.QRect(230, 730, 91, 31))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.videoFileCountLabel.setFont(font)
+        self.videoFileCountLabel.setObjectName("videoFileCountLabel")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1344, 21))
@@ -228,6 +234,7 @@ class Ui_MainWindow(object):
         self.prevVideoFrameButton.setText(_translate("MainWindow", "Previous Video Frame"))
         self.label.setText(_translate("MainWindow", "Applies only when opening a video"))
         self.previousVideoButton.setText(_translate("MainWindow", "Previous Video"))
+        self.videoFileCountLabel.setText(_translate("MainWindow", "N / N"))
         self.menuMenu.setTitle(_translate("MainWindow", "Menu"))
         self.actionOpen_Image_Folder.setText(_translate("MainWindow", "Open Image Folder"))
         self.actionOpen_Video_Folder.setText(_translate("MainWindow", "Open Video Folder"))
@@ -371,7 +378,11 @@ class Ui_MainWindow(object):
 
                 self.countLabel.setText(f"1 / {len(self.video_anno_list)}")
                 self.videoCountLabel.setText(f"1 / {self.current_total_frame}")
+                self.videoFileCountLabel.setText(f"1 / {len(self.video_path_list)}")
+
                 self.countLabel.adjustSize()
+                self.videoCountLabel.adjustSize()
+                self.videoFileCountLabel.adjustSize()
 
 
     def changePixmap(self, img):
@@ -493,6 +504,7 @@ class Ui_MainWindow(object):
         self.videoCountLabel.hide()
         self.nextVideoFrameButton.hide()
         self.prevVideoFrameButton.hide()
+        self.videoFileCountLabel.hide()
 
 
     def show_contents(self):
@@ -504,6 +516,7 @@ class Ui_MainWindow(object):
         self.videoCountLabel.show()
         self.nextVideoFrameButton.show()
         self.prevVideoFrameButton.show()
+        self.videoFileCountLabel.show()
 
 
     def img_resource_clear(self):
@@ -548,8 +561,13 @@ class Ui_MainWindow(object):
 
         self.countLabel.setText(f"1 / {len(self.video_anno_list)}")
         self.videoCountLabel.setText(f"1 / {self.current_total_frame}")
+        self.videoFileCountLabel.setText(f"{self.video_file_index + 1} / {len(self.video_path_list)}")
+        
+        self.videoCountLabel.adjustSize()
+        self.videoFileCountLabel.adjustSize()
         self.countLabel.adjustSize()
         return
+
 
     def next_video_button_clicked(self):
         if self.video_file_index == len(self.video_path_list)-1:
@@ -575,8 +593,13 @@ class Ui_MainWindow(object):
 
         self.countLabel.setText(f"1 / {len(self.video_anno_list)}")
         self.videoCountLabel.setText(f"1 / {self.current_total_frame}")
+        self.videoFileCountLabel.setText(f"{self.video_file_index + 1} / {len(self.video_path_list)}")
+        
         self.countLabel.adjustSize()
+        self.videoCountLabel.adjustSize()
+        self.videoFileCountLabel.adjustSize()
         return
+
 
     def previous_frame_button_clicked(self):
         if len(self.video_prev_anno_list) == 0 or \
@@ -601,6 +624,7 @@ class Ui_MainWindow(object):
         self.countLabel.adjustSize()
         self.prevVideoFrameButton.setDisabled(True)
         return
+
 
     def next_frame_button_clicked(self):
         if self.video_start_frame_index + self.video_buffer_size > self.current_total_frame-1:
@@ -629,6 +653,7 @@ class Ui_MainWindow(object):
         self.countLabel.adjustSize()
         self.prevVideoFrameButton.setEnabled(True)
         return
+
 
 def show_messagebox(title, text):
     QtWidgets.QMessageBox.information(None, title, text, 
