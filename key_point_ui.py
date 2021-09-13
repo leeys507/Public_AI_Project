@@ -599,6 +599,7 @@ class Ui_MainWindow(object):
         self.videoCountLabel.setText(
             f"{self.video_index + self.video_start_frame_index + 1} / {self.current_total_frame}")
         self.countLabel.adjustSize()
+        self.prevVideoFrameButton.setDisabled(True)
         return
 
     def next_frame_button_clicked(self):
@@ -626,6 +627,7 @@ class Ui_MainWindow(object):
         self.countLabel.setText(f"{self.video_index + 1} / {len(self.video_anno_list)}")
         self.videoCountLabel.setText(f"{self.video_index + self.video_start_frame_index + 1} / {self.current_total_frame}")
         self.countLabel.adjustSize()
+        self.prevVideoFrameButton.setEnabled(True)
         return
 
 def show_messagebox(title, text):
