@@ -541,6 +541,8 @@ class Ui_MainWindow(object):
         self.video_path_list.clear()
         self.video_anno_list.clear()
         self.video_pred_list.clear()
+        self.video_prev_anno_list.clear()
+        self.video_prev_pred_list.clear()
         self.video_index = 0
         self.video_start_frame_index = 0
         self.nameLabel.setText("None")
