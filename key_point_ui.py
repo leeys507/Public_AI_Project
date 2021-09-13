@@ -297,12 +297,7 @@ class Ui_MainWindow(object):
         fname = QtWidgets.QFileDialog.getExistingDirectory(self.window, 'Open Image Folder', default_path)
 
         if fname:
-            self.annoView.clear()
-            self.predView.clear()
             path_list = []
-
-            if self.img_path_list is not None:
-                self.img_resource_clear()
 
             for root, dirs, files in os.walk(fname):
                 for file in files:
@@ -310,6 +305,12 @@ class Ui_MainWindow(object):
                         path_list.append(os.path.join(root, file))
 
             if len(path_list) != 0:
+                self.annoView.clear()
+                self.predView.clear()
+
+                if self.img_path_list is not None:
+                    self.img_resource_clear()
+
                 self.img_path_list = path_list
 
                 if (len(path_list) > self.img_batch_size):
@@ -346,12 +347,7 @@ class Ui_MainWindow(object):
         fname = QtWidgets.QFileDialog.getExistingDirectory(self.window, 'Open Video Folder', default_path)
 
         if fname:
-            self.annoView.clear()
-            self.predView.clear()
             path_list = []
-
-            if self.video_path_list is not None:
-                self.video_resource_clear()
 
             for root, dirs, files in os.walk(fname):
                 for file in files:
@@ -359,6 +355,12 @@ class Ui_MainWindow(object):
                         path_list.append(os.path.join(root, file))
 
             if len(path_list) != 0:
+                self.annoView.clear()
+                self.predView.clear()
+
+                if self.video_path_list is not None:
+                    self.video_resource_clear()
+
                 self.mode = "video"
                 self.video_path_list = path_list
                 self.current_video_file = VideoFile(self.video_path_list[self.video_file_index], self.video_buffer_size)
@@ -399,6 +401,7 @@ class Ui_MainWindow(object):
     def show_image(self, anno_pixmap_img, pred_pixmap_img, total_frame=1):
         self.annoView.clear()
         self.predView.clear()
+        
         if self.mode == "img":
             self.annoView.setPixmap(anno_pixmap_img)
             self.predView.setPixmap(pred_pixmap_img)
