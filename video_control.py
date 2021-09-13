@@ -58,7 +58,7 @@ class VideoFile:
         # self.fps = self.fp.get(cv2.CAP_PROP_FPS)
         # self.width = self.fp.get(cv2.CAP_PROP_FRAME_WIDTH)
         # self.height = self.fp.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        # self.frames = self.fp.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.frames = int(self.fp.get(cv2.CAP_PROP_FRAME_COUNT))
         self.current = 0
 
         skip = 0
@@ -91,15 +91,6 @@ class VideoFile:
             self.current_frame[i] = frame
             self.current += 1
             self.current_frame_length += 1
-
-        # if ret == False:
-        #     return False
-        # # for i in range(0, self.frameSkip):
-        # #     ret, dump = self.fp.read()
-        # self.current += self.frameSkip
-        # self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current)
-        # self.buffer.EnQ(frame)
-        # return frame
     
     def readPresentFrame(self):
         return self.buffer.getNewest()

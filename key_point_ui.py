@@ -39,6 +39,8 @@ class Ui_MainWindow(object):
         self.video_buffer_size = 10
         self.current_total_frame = 1
 
+        self.new_prediction = True
+
         if "window" in kwargs:
             self.window = kwargs.get("window")
         else:
@@ -276,7 +278,7 @@ class Ui_MainWindow(object):
         else: # video
             if self.video_anno_list is not None and self.video_index < len(self.video_anno_list) - 1:
                 self.video_index += 1
-                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index], self.current_total_frame)
+                self.show_image(self.video_anno_list[self.video_index], self.video_pred_list[self.video_index], self.current_video_file.frames)
 
 
     def prev_button_clicked(self):
@@ -408,6 +410,7 @@ class Ui_MainWindow(object):
 
         self.nameLabel.adjustSize()
         self.countLabel.adjustSize()
+        self.videoCountLabel.adjustSize()
 
 
     def create_anno_pixmap(self, anno_img_path_list):
@@ -584,6 +587,9 @@ class Ui_MainWindow(object):
         anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
         pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
 
+        # self.video_prev_anno_list = self.video_anno_list.copy()
+        # self.video_prev_pred_list = self.video_pred_list.copy()
+
         self.video_anno_list = anno_pixmap_list
         self.video_pred_list = pred_pixmap_list
 
@@ -606,52 +612,57 @@ class Ui_MainWindow(object):
                 self.video_start_frame_index - self.video_buffer_size < 0:
             print("No Frames In Buffer")
             return
-        self.video_anno_list = self.video_prev_anno_list
-        self.video_pred_list = self.video_prev_pred_list
+        # self.video_anno_list = self.video_prev_anno_list
+        # self.video_pred_list = self.video_prev_pred_list
 
-        self.video_prev_anno_list = []
-        self.video_prev_pred_list = []
+        # self.video_prev_anno_list = []
+        # self.video_prev_pred_list = []
         self.video_start_frame_index -= self.video_buffer_size
         self.video_index = 0
 
-        self.show_image(self.video_anno_list[self.video_index],
-                        self.video_pred_list[self.video_index],
+        self.show_image(self.video_prev_anno_list[self.video_index],
+                        self.video_prev_pred_list[self.video_index],
                         self.current_total_frame)
 
         self.countLabel.setText(f"{self.video_index + 1} / {len(self.video_anno_list)}")
         self.videoCountLabel.setText(
-            f"{self.video_index + self.video_start_frame_index + 1} / {self.current_total_frame}")
+            f"{self.video_start_frame_index + 1} / {self.current_total_frame}")
         self.countLabel.adjustSize()
         self.prevVideoFrameButton.setDisabled(True)
+        self.new_prediction = False
         return
 
 
     def next_frame_button_clicked(self):
-        if self.video_start_frame_index + self.video_buffer_size > self.current_total_frame-1:
+        if self.video_start_frame_index + self.video_buffer_size > self.current_video_file.frames-1:
             print("No More Next Frames")
             return
-        self.video_prev_anno_list = self.video_anno_list
-        self.video_prev_pred_list = self.video_pred_list
+
         self.video_start_frame_index += self.video_buffer_size
         self.video_index = 0
+        
+        if self.new_prediction:
+            self.video_prev_anno_list = self.video_anno_list.copy()
+            self.video_prev_pred_list = self.video_pred_list.copy()
 
-        self.current_video_file = VideoFile(self.video_path_list[self.video_file_index], self.video_buffer_size, self.video_start_frame_index)
-        anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
+            self.current_video_file.readFrame()
+            anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
 
-        anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
-        pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
+            anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
+            pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
 
-        self.video_anno_list = anno_pixmap_list
-        self.video_pred_list = pred_pixmap_list
+            self.video_anno_list = anno_pixmap_list
+            self.video_pred_list = pred_pixmap_list
 
         self.show_image(self.video_anno_list[self.video_index],
                         self.video_pred_list[self.video_index],
                         self.current_total_frame)
 
         self.countLabel.setText(f"{self.video_index + 1} / {len(self.video_anno_list)}")
-        self.videoCountLabel.setText(f"{self.video_index + self.video_start_frame_index + 1} / {self.current_total_frame}")
+        self.videoCountLabel.setText(f"{self.video_index + self.video_start_frame_index + 1} / {self.current_video_file.frames}")
         self.countLabel.adjustSize()
         self.prevVideoFrameButton.setEnabled(True)
+        self.new_prediction = True
         return
 
 
