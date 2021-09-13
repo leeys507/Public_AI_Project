@@ -6,7 +6,7 @@
 <div>
 prediction incorrect key point with annotation<br>
 used pretrained model keypointrcnn_resnet50_fpn<br>
-create log incorrect point<br>
+create log incorrect points<br>
 -- annotations.json file format --<br>
 filename, width, hegiht, fps, total_frame, <br>
 annotations["frame"], annotations["bbox"], annotations["keypoints"]<br>
