@@ -385,6 +385,7 @@ class Ui_MainWindow(object):
                 self.countLabel.adjustSize()
                 self.videoCountLabel.adjustSize()
                 self.videoFileCountLabel.adjustSize()
+                self.prevVideoFrameButton.setDisabled(True)
 
 
     def changePixmap(self, img):
@@ -587,9 +588,6 @@ class Ui_MainWindow(object):
         anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
         pred_pixmap_list = self.create_pred_video_pixmap(anno_img_info)
 
-        # self.video_prev_anno_list = self.video_anno_list.copy()
-        # self.video_prev_pred_list = self.video_pred_list.copy()
-
         self.video_anno_list = anno_pixmap_list
         self.video_pred_list = pred_pixmap_list
 
@@ -610,13 +608,9 @@ class Ui_MainWindow(object):
     def previous_frame_button_clicked(self):
         if len(self.video_prev_anno_list) == 0 or \
                 self.video_start_frame_index - self.video_buffer_size < 0:
-            print("No Frames In Buffer")
+            show_messagebox("확인", "No Frames In Buffer")
             return
-        # self.video_anno_list = self.video_prev_anno_list
-        # self.video_pred_list = self.video_prev_pred_list
 
-        # self.video_prev_anno_list = []
-        # self.video_prev_pred_list = []
         self.video_start_frame_index -= self.video_buffer_size
         self.video_index = 0
 
@@ -635,12 +629,12 @@ class Ui_MainWindow(object):
 
     def next_frame_button_clicked(self):
         if self.video_start_frame_index + self.video_buffer_size > self.current_video_file.frames-1:
-            print("No More Next Frames")
+            show_messagebox("확인", "No More Next Frames")
             return
 
         self.video_start_frame_index += self.video_buffer_size
         self.video_index = 0
-        
+
         if self.new_prediction:
             self.video_prev_anno_list = self.video_anno_list.copy()
             self.video_prev_pred_list = self.video_pred_list.copy()
