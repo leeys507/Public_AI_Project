@@ -50,14 +50,10 @@ class VideoFile:
     def __init__(self, filePath='./video_01/video_01.mp4', bufferSize=20, start_idx=0):
         self.fp = cv2.VideoCapture(filePath)
         self.file_path = filePath
-        # self.buffer = CircularQ(bufferSize)
         self.buffer_size = bufferSize
         self.buffer = [0] * bufferSize
         self.current_frame = [0] * bufferSize
         self.current_frame_length = 0
-        # self.fps = self.fp.get(cv2.CAP_PROP_FPS)
-        # self.width = self.fp.get(cv2.CAP_PROP_FRAME_WIDTH)
-        # self.height = self.fp.get(cv2.CAP_PROP_FRAME_HEIGHT)
         self.frames = int(self.fp.get(cv2.CAP_PROP_FRAME_COUNT))
         self.current = 0
 
@@ -78,33 +74,42 @@ class VideoFile:
     def __del__(self):
         self.fp.release()
     
-    def readFrame(self):
-        self.buffer = self.current_frame.copy() # 버퍼 복사
-        self.current_frame_length = 0
-        self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current) # 프레임 위치 설정
+    def readFrame(self, position_only=True):
+        if position_only == True: 
+            self.current += self.buffer_size
+        else:
+            self.buffer = self.current_frame.copy() # 버퍼 복사
+            self.current_frame_length = 0
+            self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current) # 프레임 위치 설정
 
-        for i in range(self.buffer_size):
-            ret, frame = self.fp.read()
-            if ret == False:
-                break
-            self.current_frame[i] = frame
-            self.current += 1
-            self.current_frame_length += 1
-
+            for i in range(self.buffer_size):
+                ret, frame = self.fp.read()
+                if ret == False:
+                    break
+                self.current_frame[i] = frame
+                self.current += 1
+                self.current_frame_length += 1
     
-    def readPrevFrame(self):
-        self.current -= self.buffer_size
-        self.buffer = self.current_frame.copy() # 버퍼 복사
-        self.current_frame_length = 0
-        self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current) # 프레임 위치 설정
 
-        for i in range(self.buffer_size):
-            ret, frame = self.fp.read()
-            if ret == False:
-                break
-            self.current_frame[i] = frame
-            self.current += 1
-            self.current_frame_length += 1
+    def readPrevFrame(self, position_only=True):
+        if self.current % self.buffer_size != 0:
+            self.current -= (self.current % self.buffer_size)
+        elif position_only == True:
+            self.current -= self.buffer_size
+        else:
+            self.current -= (self.buffer_size * 2)
+            self.buffer = self.current_frame.copy() # 버퍼 복사
+            self.current_frame_length = 0
+            self.fp.set(cv2.CAP_PROP_POS_FRAMES, self.current) # 프레임 위치 설정
+
+            for i in range(self.buffer_size):
+                ret, frame = self.fp.read()
+                if ret == False:
+                    break
+                self.current_frame[i] = frame
+                self.current += 1
+                self.current_frame_length += 1
+
     
     def readPresentFrame(self):
         return self.buffer.getNewest()

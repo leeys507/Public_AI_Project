@@ -295,10 +295,10 @@ class Ui_MainWindow(object):
     def open_img_folder_clicked(self):
         default_path = os.path.join(os.path.expanduser('~'), 'Desktop/')
         fname = QtWidgets.QFileDialog.getExistingDirectory(self.window, 'Open Image Folder', default_path)
-        self.annoView.clear()
-        self.predView.clear()
 
         if fname:
+            self.annoView.clear()
+            self.predView.clear()
             path_list = []
 
             if self.img_path_list is not None:
@@ -344,10 +344,10 @@ class Ui_MainWindow(object):
 
         default_path = os.path.join(os.path.expanduser('~'), 'Desktop/')
         fname = QtWidgets.QFileDialog.getExistingDirectory(self.window, 'Open Video Folder', default_path)
-        self.annoView.clear()
-        self.predView.clear()
 
         if fname:
+            self.annoView.clear()
+            self.predView.clear()
             path_list = []
 
             if self.video_path_list is not None:
@@ -394,6 +394,8 @@ class Ui_MainWindow(object):
 
 
     def show_image(self, anno_pixmap_img, pred_pixmap_img, total_frame=1):
+        self.annoView.clear()
+        self.predView.clear()
         if self.mode == "img":
             self.annoView.setPixmap(anno_pixmap_img)
             self.predView.setPixmap(pred_pixmap_img)
@@ -618,7 +620,7 @@ class Ui_MainWindow(object):
             self.video_prev_anno_list = self.video_anno_list.copy()
             self.video_prev_pred_list = self.video_pred_list.copy()
 
-            self.current_video_file.readPrevFrame()
+            self.current_video_file.readPrevFrame(False)
             anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
 
             anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
@@ -626,11 +628,22 @@ class Ui_MainWindow(object):
 
             self.video_anno_list = anno_pixmap_list
             self.video_pred_list = pred_pixmap_list
-        else:
-            self.new_prediction = False
 
-        self.show_image(self.video_prev_anno_list[self.video_index],
-                        self.video_prev_pred_list[self.video_index],
+        else:
+            temp_anno_list = self.video_anno_list.copy()
+            temp_pred_list = self.video_pred_list.copy()
+
+            self.video_anno_list = self.video_prev_anno_list
+            self.video_pred_list = self.video_prev_anno_list
+
+            self.video_prev_anno_list = temp_anno_list
+            self.video_prev_pred_list = temp_pred_list
+
+            self.new_prediction = False
+            self.current_video_file.readPrevFrame()
+
+        self.show_image(self.video_anno_list[self.video_index],
+                        self.video_pred_list[self.video_index],
                         self.current_total_frame)
 
         self.countLabel.setText(f"{self.video_index + 1} / {len(self.video_anno_list)}")
@@ -653,7 +666,7 @@ class Ui_MainWindow(object):
             self.video_prev_anno_list = self.video_anno_list.copy()
             self.video_prev_pred_list = self.video_pred_list.copy()
 
-            self.current_video_file.readFrame()
+            self.current_video_file.readFrame(False)
             anno_path = os.path.join(os.path.dirname(self.video_path_list[self.video_file_index]), "annotations.json")
 
             anno_pixmap_list, anno_img_info = self.create_anno_video_pixmap(anno_path)
@@ -661,6 +674,17 @@ class Ui_MainWindow(object):
 
             self.video_anno_list = anno_pixmap_list
             self.video_pred_list = pred_pixmap_list
+        else:
+            temp_anno_list = self.video_anno_list.copy()
+            temp_pred_list = self.video_pred_list.copy()
+
+            self.video_anno_list = self.video_prev_anno_list
+            self.video_pred_list = self.video_prev_anno_list
+
+            self.video_prev_anno_list = temp_anno_list
+            self.video_prev_pred_list = temp_pred_list
+
+            self.current_video_file.readFrame()
 
         self.show_image(self.video_anno_list[self.video_index],
                         self.video_pred_list[self.video_index],
