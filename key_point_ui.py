@@ -538,6 +538,7 @@ class Ui_MainWindow(object):
         self.img_index = 0
         self.nameLabel.setText("None")
         self.nameLabel.adjustSize()
+        self.new_prediction = True
 
 
     def video_resource_clear(self):
@@ -550,11 +551,15 @@ class Ui_MainWindow(object):
         self.video_start_frame_index = 0
         self.nameLabel.setText("None")
         self.nameLabel.adjustSize()
+        self.new_prediction = True
 
 
     def previous_video_button_clicked(self):
         if self.video_file_index == 0:
             return
+
+        self.new_prediction = True
+
         self.video_index = 0
         self.video_start_frame_index = 0
         self.video_file_index -= 1
@@ -586,6 +591,9 @@ class Ui_MainWindow(object):
     def next_video_button_clicked(self):
         if self.video_file_index == len(self.video_path_list)-1:
             return
+        
+        self.new_prediction = True
+
         self.video_index = 0
         self.video_start_frame_index = 0
         self.video_file_index += 1
