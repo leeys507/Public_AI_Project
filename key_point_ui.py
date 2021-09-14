@@ -311,6 +311,7 @@ class Ui_MainWindow(object):
                 if self.img_path_list is not None:
                     self.img_resource_clear()
 
+                self.mode = "img"
                 self.img_path_list = path_list
 
                 if (len(path_list) > self.img_batch_size):
@@ -328,8 +329,6 @@ class Ui_MainWindow(object):
 
             else:
                 show_messagebox("이미지 파일 없음", "이미지 파일이 존재하지 않습니다")
-
-            self.mode = "img"
 
 
     def open_video_folder_clicked(self):
