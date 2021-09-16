@@ -160,14 +160,18 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         MainWindow.setWindowIcon(QtGui.QIcon('img/chatbot.png'))
 
+        self.sendMessageButton.setDisabled(True)
+
     # Function -------------------------------------------------------------------------------------------------------------
     def add_event(self):
         self.actionExit.triggered.connect(QtWidgets.qApp.quit)
         self.sendMessageButton.clicked.connect(self.send_message_button_clicked)
+        self.sendMessageBox.keyPressEvent = self.send_message_keypress_event
 
     
     def send_message_button_clicked(self):
         text = self.sendMessageBox.toPlainText()
+        self.sendMessageBox.clear()
 
         self.messageListBox.setTextColor(QtGui.QColor(255, 0, 0))
         self.messageListBox.setAlignment(QtCore.Qt.AlignRight)
@@ -190,6 +194,25 @@ class Ui_MainWindow(object):
     def show_date(self):
         currentTime = QtCore.QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss ap ddd")
         self.dateLabel.setText(currentTime)
+
+
+    def send_message_keypress_event(self, e):
+        if e.key() == QtCore.Qt.Key_Return and not (e.modifiers() & QtCore.Qt.ShiftModifier):
+            if self.sendMessageButton.isEnabled() == True:
+                self.sendMessageButton.click()
+                self.sendMessageBox.clear()
+                self.sendMessageButton.setDisabled(True)
+        else:
+            QtWidgets.QTextEdit.keyPressEvent(self.sendMessageBox, e)
+            temp_text = self.sendMessageBox.toPlainText()
+            
+            temp_text = temp_text.replace(" ", "")
+            temp_text = temp_text.replace("\n", "")
+
+            if temp_text == "":
+                self.sendMessageButton.setDisabled(True)
+            else:
+                self.sendMessageButton.setEnabled(True)
 
     
     def show_messagebox(title, text):
