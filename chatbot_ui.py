@@ -206,8 +206,7 @@ class Ui_MainWindow(object):
             QtWidgets.QTextEdit.keyPressEvent(self.sendMessageBox, e)
             temp_text = self.sendMessageBox.toPlainText()
             
-            temp_text = temp_text.replace(" ", "")
-            temp_text = temp_text.replace("\n", "")
+            temp_text = temp_text.replace(" ", "").replace("\n", "")
 
             if temp_text == "":
                 self.sendMessageButton.setDisabled(True)
