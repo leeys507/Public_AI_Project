@@ -6,8 +6,11 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+from genericpath import exists
 from PyQt5 import QtCore, QtGui, QtWidgets
 import PyQt5
+
+import os
 
 class Ui_MainWindow(object):
     def __init__(self, **kwargs):
@@ -110,6 +113,13 @@ class Ui_MainWindow(object):
         self.dateLabel = QtWidgets.QLabel(self.centralwidget)
         self.dateLabel.setGeometry(QtCore.QRect(650, 6, 171, 20))
         self.dateLabel.setObjectName("dateLabel")
+        self.saveSettingsButton = QtWidgets.QPushButton(self.centralwidget)
+        self.saveSettingsButton.setGeometry(QtCore.QRect(724, 60, 101, 51))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.saveSettingsButton.setFont(font)
+        self.saveSettingsButton.setStyleSheet("color:red")
+        self.saveSettingsButton.setObjectName("saveSettingsButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 837, 21))
@@ -120,22 +130,17 @@ class Ui_MainWindow(object):
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
-        self.actionSave_Settings = QtWidgets.QAction(MainWindow)
-        font = QtGui.QFont()
-        font.setPointSize(10)
-        self.actionSave_Settings.setFont(font)
-        self.actionSave_Settings.setObjectName("actionSave_Settings")
         self.actionExit = QtWidgets.QAction(MainWindow)
         font = QtGui.QFont()
         font.setPointSize(10)
         self.actionExit.setFont(font)
         self.actionExit.setObjectName("actionExit")
-        self.menuMenu.addAction(self.actionSave_Settings)
         self.menuMenu.addAction(self.actionExit)
         self.menubar.addAction(self.menuMenu.menuAction())
 
-        # Event and text ---------------------------------------------------------------------------------------------------
+        # Event and Settings ---------------------------------------------------------------------------------------------------
         self.add_event()
+        self.load_settings()
         self.timerStart(MainWindow)
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -155,9 +160,10 @@ class Ui_MainWindow(object):
         self.messageSaveDirectorySearchButton.setText(_translate("MainWindow", "Search"))
         self.label_4.setText(_translate("MainWindow", "Date"))
         self.dateLabel.setText(_translate("MainWindow", "None"))
+        self.saveSettingsButton.setText(_translate("MainWindow", "Save Settings"))
         self.menuMenu.setTitle(_translate("MainWindow", "Menu"))
-        self.actionSave_Settings.setText(_translate("MainWindow", "Save Settings"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
+
         MainWindow.setWindowIcon(QtGui.QIcon('img/chatbot.png'))
 
         self.sendMessageButton.setDisabled(True)
@@ -167,6 +173,9 @@ class Ui_MainWindow(object):
         self.actionExit.triggered.connect(QtWidgets.qApp.quit)
         self.sendMessageButton.clicked.connect(self.send_message_button_clicked)
         self.sendMessageBox.keyPressEvent = self.send_message_keypress_event
+        self.messageSaveDirectorySearchButton.clicked.connect(self.search_msg_save_folder_clicked)
+        self.modelSearchButton.clicked.connect(self.search_model_folder_clicked)
+        self.saveSettingsButton.clicked.connect(self.save_settings_clicked)
 
     
     def send_message_button_clicked(self):
@@ -213,7 +222,44 @@ class Ui_MainWindow(object):
             else:
                 self.sendMessageButton.setEnabled(True)
 
+
+    def search_msg_save_folder_clicked(self):
+        default_path = os.path.join(os.path.expanduser('~'), 'Desktop/')
+        fname = QtWidgets.QFileDialog.getExistingDirectory(self.window, 'Search Folder', default_path)
+
+        if fname:
+            self.messageSaveDirectoryTextBox.setText(fname)
+
     
-    def show_messagebox(title, text):
-        QtWidgets.QMessageBox.information(None, title, text, 
-            QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)
+    def search_model_folder_clicked(self):
+        default_path = os.path.join(os.path.expanduser('~'), 'Desktop/')
+        filter = "model file(*.pt *.pth .*pwf)"
+
+        fname = QtWidgets.QFileDialog.getOpenFileName(self.window, 'Search File', default_path, filter=filter)
+        
+        if fname[0]:
+            self.modelPathTextBox.setText(fname[0])
+
+
+    def save_settings_clicked(self):
+        with open("Settings.dat", "wb") as f:
+            f.write((self.modelPathTextBox.text() + "\n").encode())
+            f.write("1\n".encode() if self.modelAutoLoadCheckBox.isChecked() else "0\n".encode())
+            f.write((self.messageSaveDirectoryTextBox.text() + "\n").encode())
+            f.write("1\n".encode() if self.messageAutoSaveCheckBox.isChecked() else "0\n".encode())
+        
+        show_messagebox("확인", "설정 저장 완료")
+
+
+    def load_settings(self):
+        if os.path.exists("Settings.dat"):
+            with open("Settings.dat", "rb") as f:
+                self.modelPathTextBox.setText(f.readline().decode())
+                self.modelAutoLoadCheckBox.setChecked(True if f.readline().decode() == "1\n" else False)
+                self.messageSaveDirectoryTextBox.setText(f.readline().decode())
+                self.messageAutoSaveCheckBox.setChecked(True if f.readline().decode() == "1\n" else False)
+    
+
+def show_messagebox(title, text):
+    QtWidgets.QMessageBox.information(None, title, text, 
+        QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)
