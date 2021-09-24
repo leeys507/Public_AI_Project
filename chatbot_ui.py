@@ -10,7 +10,14 @@ from genericpath import exists
 from PyQt5 import QtCore, QtGui, QtWidgets
 import PyQt5
 
+import torch
+
+from model import Combination
+
+from general import load_pretrained_weights, load_checkpoint, sentence_prediction
+
 import os
+from reply import SCRIPT_LIST
 
 class Ui_MainWindow(object):
     def __init__(self, **kwargs):
@@ -20,21 +27,18 @@ class Ui_MainWindow(object):
         else:
             raise Exception("window is not found")
 
-        if "model" in kwargs:
-            self.model = kwargs.get("model")
-        else:
-            raise Exception("model is not found")
-
-        if "device" in kwargs:
-            self.device = kwargs.get("device")
-        else:
-            raise Exception("device is not found")
+        self.model = None
+        self.device = None
 
     
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(837, 843)
         MainWindow.setMinimumSize(QtCore.QSize(837, 843))
+        MainWindow.setMaximumSize(QtCore.QSize(837, 843))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        MainWindow.setFont(font)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.label = QtWidgets.QLabel(self.centralwidget)
@@ -120,9 +124,15 @@ class Ui_MainWindow(object):
         self.saveSettingsButton.setFont(font)
         self.saveSettingsButton.setStyleSheet("color:red")
         self.saveSettingsButton.setObjectName("saveSettingsButton")
+        self.modelLoadButton = QtWidgets.QPushButton(self.centralwidget)
+        self.modelLoadButton.setGeometry(QtCore.QRect(440, 80, 75, 23))
+        self.modelLoadButton.setObjectName("modelLoadButton")
+        self.manualButton = QtWidgets.QPushButton(self.centralwidget)
+        self.manualButton.setGeometry(QtCore.QRect(510, 240, 161, 61))
+        self.manualButton.setObjectName("manualButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 837, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 837, 23))
         self.menubar.setObjectName("menubar")
         self.menuMenu = QtWidgets.QMenu(self.menubar)
         self.menuMenu.setObjectName("menuMenu")
@@ -161,6 +171,8 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "Date"))
         self.dateLabel.setText(_translate("MainWindow", "None"))
         self.saveSettingsButton.setText(_translate("MainWindow", "Save Settings"))
+        self.modelLoadButton.setText(_translate("MainWindow", "Load"))
+        self.manualButton.setText(_translate("MainWindow", "Manual"))
         self.menuMenu.setTitle(_translate("MainWindow", "Menu"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
 
@@ -176,11 +188,17 @@ class Ui_MainWindow(object):
         self.messageSaveDirectorySearchButton.clicked.connect(self.search_msg_save_folder_clicked)
         self.modelSearchButton.clicked.connect(self.search_model_folder_clicked)
         self.saveSettingsButton.clicked.connect(self.save_settings_clicked)
+        self.modelLoadButton.clicked.connect(self.load_model)
 
     
     def send_message_button_clicked(self):
         text = self.sendMessageBox.toPlainText()
         self.sendMessageBox.clear()
+
+        if self.model is None:
+            show_messagebox("오류", "model load를 해주세요")
+            self.sendMessageButton.setDisabled(True)
+            return
 
         self.messageListBox.setTextColor(QtGui.QColor(255, 0, 0))
         self.messageListBox.setAlignment(QtCore.Qt.AlignRight)
@@ -191,6 +209,8 @@ class Ui_MainWindow(object):
         self.messageListBox.setAlignment(QtCore.Qt.AlignLeft)
         self.messageListBox.insertPlainText("Reply")
         self.messageListBox.append("")
+        self.sendMessageButton.setDisabled(True)
+        self.sendMessageBox.setFocus()
 
     
     def timerStart(self, MainWindow):
@@ -254,11 +274,37 @@ class Ui_MainWindow(object):
     def load_settings(self):
         if os.path.exists("Settings.dat"):
             with open("Settings.dat", "rb") as f:
-                self.modelPathTextBox.setText(f.readline().decode())
+                self.modelPathTextBox.setText(f.readline().decode().replace("\n", ""))
                 self.modelAutoLoadCheckBox.setChecked(True if f.readline().decode() == "1\n" else False)
-                self.messageSaveDirectoryTextBox.setText(f.readline().decode())
+                self.messageSaveDirectoryTextBox.setText(f.readline().decode().replace("\n", ""))
                 self.messageAutoSaveCheckBox.setChecked(True if f.readline().decode() == "1\n" else False)
+            
+            if self.modelAutoLoadCheckBox.isChecked():
+                show_messagebox("확인", "model auto load")
+                self.load_model()
+
     
+    def load_model(self):
+        path = self.modelPathTextBox.text()
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        classes = ["unknown", "hello", "manual", "title", "actor", "director", "rank", "year", "country"]
+
+        try:
+            if self.model is not None:
+                show_messagebox("이미 model load 되었습니다")
+            elif path is not None and path != "":
+                # load vocab
+                vocab, weight = load_pretrained_weights(path, self.device)
+
+                self.model = Combination(vocab, len(vocab), class_num=len(classes), embed_dim=512, n_filters=128).to(self.device)
+                load_checkpoint(path, self.model, self.device, optimizer=None, strict=False)
+                show_messagebox("확인", "model 로드 완료")
+            else:
+                show_messagebox("오류", "model 경로를 지정하세요")
+
+        except Exception as e:
+            show_messagebox("오류", e)
+
 
 def show_messagebox(title, text):
     QtWidgets.QMessageBox.information(None, title, text, 

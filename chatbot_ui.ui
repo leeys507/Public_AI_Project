@@ -16,6 +16,17 @@
     <height>843</height>
    </size>
   </property>
+  <property name="maximumSize">
+   <size>
+    <width>837</width>
+    <height>843</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <pointsize>10</pointsize>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>Movie Information Chatbot</string>
   </property>
@@ -277,6 +288,32 @@
      <string>Save Settings</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="modelLoadButton">
+    <property name="geometry">
+     <rect>
+      <x>440</x>
+      <y>80</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Load</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="manualButton">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>240</y>
+      <width>161</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Manual</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -284,7 +321,7 @@
      <x>0</x>
      <y>0</y>
      <width>837</width>
-     <height>21</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMenu">
