@@ -17,18 +17,27 @@ from model import Combination
 from general import load_pretrained_weights, load_checkpoint, sentence_prediction
 
 import os
+import random
+from eunjeon import Mecab
 from reply import SCRIPT_LIST
 
 class Ui_MainWindow(object):
     def __init__(self, **kwargs):
-
         if "window" in kwargs:
             self.window = kwargs.get("window")
         else:
             raise Exception("window is not found")
 
         self.model = None
-        self.device = None
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.classes = ["unknown", "hello", "manual", "title", "actor", "director", "rank", "year", "country"]
+        self.tokenize = Mecab()
+        self.cpu_device = "cpu"
+        self.softmax = torch.nn.Softmax(dim=1)
+        self.threshold = 0.7
+
+        self.check_get_info = False
+        self.label = 0
 
     
     def setupUi(self, MainWindow):
@@ -130,9 +139,12 @@ class Ui_MainWindow(object):
         self.manualButton = QtWidgets.QPushButton(self.centralwidget)
         self.manualButton.setGeometry(QtCore.QRect(510, 240, 161, 61))
         self.manualButton.setObjectName("manualButton")
+        self.messageClearButton = QtWidgets.QPushButton(self.centralwidget)
+        self.messageClearButton.setGeometry(QtCore.QRect(230, 105, 75, 23))
+        self.messageClearButton.setObjectName("messageClearButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 837, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 837, 21))
         self.menubar.setObjectName("menubar")
         self.menuMenu = QtWidgets.QMenu(self.menubar)
         self.menuMenu.setObjectName("menuMenu")
@@ -173,6 +185,7 @@ class Ui_MainWindow(object):
         self.saveSettingsButton.setText(_translate("MainWindow", "Save Settings"))
         self.modelLoadButton.setText(_translate("MainWindow", "Load"))
         self.manualButton.setText(_translate("MainWindow", "Manual"))
+        self.messageClearButton.setText(_translate("MainWindow", "Clear"))
         self.menuMenu.setTitle(_translate("MainWindow", "Menu"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
 
@@ -189,8 +202,11 @@ class Ui_MainWindow(object):
         self.modelSearchButton.clicked.connect(self.search_model_folder_clicked)
         self.saveSettingsButton.clicked.connect(self.save_settings_clicked)
         self.modelLoadButton.clicked.connect(self.load_model)
+        self.messageClearButton.clicked.connect(self.message_clear)
+        self.manualButton.clicked.connect(self.manual_button_clicked)
+        self.messageListSaveButton.clicked.connect(self.message_save_clicked)
 
-    
+    # 사용자 메시지
     def send_message_button_clicked(self):
         text = self.sendMessageBox.toPlainText()
         self.sendMessageBox.clear()
@@ -203,14 +219,29 @@ class Ui_MainWindow(object):
         self.messageListBox.setTextColor(QtGui.QColor(255, 0, 0))
         self.messageListBox.setAlignment(QtCore.Qt.AlignRight)
         self.messageListBox.insertPlainText(text)
-        self.messageListBox.append("")
+        self.messageListBox.append("\r\n")
 
-        self.messageListBox.setTextColor(QtGui.QColor(0, 0, 255))
-        self.messageListBox.setAlignment(QtCore.Qt.AlignLeft)
-        self.messageListBox.insertPlainText("Reply")
-        self.messageListBox.append("")
         self.sendMessageButton.setDisabled(True)
         self.sendMessageBox.setFocus()
+        self.prediction_chatbot_message(text)
+
+    # 챗봇 메시지
+    def reply_chatbot_message(self, text):
+        self.messageListBox.setTextColor(QtGui.QColor(0, 0, 255))
+        self.messageListBox.setAlignment(QtCore.Qt.AlignLeft)
+        self.messageListBox.insertPlainText(text)
+        self.messageListBox.append("\r\n")
+
+    # 사용자 메시지 예측
+    def prediction_chatbot_message(self, text):
+        output = sentence_prediction(self.model, self.model.vocab, text, self.tokenize.morphs, self.device, self.cpu_device)
+        output= self.softmax(output)
+        output = (output > self.threshold).int().to(self.cpu_device)
+        top_idx = torch.topk(output, 1)
+        top_idx = top_idx.indices.numpy().reshape(-1)
+        pred_str = self.classes[top_idx[0]]
+
+        self.reply_chatbot_message(SCRIPT_LIST[pred_str][random.randrange(0, len(SCRIPT_LIST[pred_str]))])
 
     
     def timerStart(self, MainWindow):
@@ -286,8 +317,6 @@ class Ui_MainWindow(object):
     
     def load_model(self):
         path = self.modelPathTextBox.text()
-        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        classes = ["unknown", "hello", "manual", "title", "actor", "director", "rank", "year", "country"]
 
         try:
             if self.model is not None:
@@ -296,16 +325,49 @@ class Ui_MainWindow(object):
                 # load vocab
                 vocab, weight = load_pretrained_weights(path, self.device)
 
-                self.model = Combination(vocab, len(vocab), class_num=len(classes), embed_dim=512, n_filters=128).to(self.device)
+                self.model = Combination(vocab, len(vocab), class_num=len(self.classes), embed_dim=512, n_filters=128).to(self.device)
                 load_checkpoint(path, self.model, self.device, optimizer=None, strict=False)
                 show_messagebox("확인", "model 로드 완료")
+                self.reply_chatbot_message(SCRIPT_LIST["welcome"][random.randrange(0, len(SCRIPT_LIST["welcome"]))])
             else:
                 show_messagebox("오류", "model 경로를 지정하세요")
 
         except Exception as e:
             show_messagebox("오류", e)
+            QtWidgets.qApp.quit()
+
+
+    def manual_button_clicked(self):
+        self.reply_chatbot_message(SCRIPT_LIST["manual"][random.randrange(0, len(SCRIPT_LIST["manual"]))])
+
+
+    def message_clear(self):
+        reply = QtWidgets.QMessageBox.warning(None, "확인", "대화 내역이 모두 지워집니다. 계속하시겠습니까?", 
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.messageListBox.clear()
+
+
+    def message_save_clicked(self):
+        path = self.messageSaveDirectoryTextBox.text()
+        if path == "" or path is None:
+            path = "."
+
+        if os.path.exists(path + "/chatbot_message_list.txt"):
+            reply = QtWidgets.QMessageBox.warning(None, "확인", "메시지 파일이 존재합니다.\n현재 메시지 내용으로 덮어씌워집니다.\n계속하시겠습니까?", 
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+
+            if reply == QtWidgets.QMessageBox.Yes:
+                with open(path + "/chatbot_message_list.txt", "w", encoding="utf-8") as f:
+                    f.write(self.messageListBox.toPlainText())
+                show_messagebox("확인", "저장 완료")
+        else:
+            with open(path + "/chatbot_message_list.txt", "w", encoding="utf-8") as f:
+                f.write(self.messageListBox.toPlainText())
+            show_messagebox("확인", "저장 완료")
 
 
 def show_messagebox(title, text):
-    QtWidgets.QMessageBox.information(None, title, text, 
+   QtWidgets.QMessageBox.information(None, title, text, 
         QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)

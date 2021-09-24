@@ -314,6 +314,19 @@
      <string>Manual</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="messageClearButton">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>105</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Clear</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -321,7 +334,7 @@
      <x>0</x>
      <y>0</y>
      <width>837</width>
-     <height>23</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMenu">
