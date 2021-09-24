@@ -106,81 +106,50 @@ nation_code = {
     '기타_9': '22049999',
 }
 
-
-def from_title(title):
-    title_params = {
-        "key": kofic_key,
-        "movieNm": title,
-    }
-    title_response = requests.get(url=kofic_title_url, params=title_params)
-    if title_response.status_code == 200:
-        data = title_response.json()
+def get_info(title=None, director=None, start_year=None, end_year=None, nation_name=None):
+    info_params = dict()
+    info_params["key"] = kofic_key
+    if title is not None:
+        info_params["movieNm"] = title
+    if director is not None:
+        info_params["directorNm"] = director
+    if start_year is not None and end_year is not None:  # format: yyyy (ex. 2021)
+        info_params["openStartDt"] = start_year
+        info_params["openEndDt"] = end_year
+    if nation_name is not None:
+        if nation_code[nation_name] is not None:
+            info_params["repNationCd"] = nation_code[nation_name]
+    info_response = requests.get(url=kofic_title_url, params=info_params)
+    if info_response.status_code == 200:
+        data = info_response.json()
         return data['movieListResult']['movieList']
     else: return None
 
-
-def from_actor(actor_name):
+def get_actor_info(actor):
     actor_params = {
         "key": kofic_key,
-        "peopleNm": actor_name
+        "peopleNm": actor
     }
     actor_response = requests.get(url=kofic_actor_url, params=actor_params)
     if actor_response.status_code == 200:
         data = actor_response.json()
         return data['peopleListResult']['peopleList']
-    else: return None
+    else:
+        return None
 
-
-def from_director(director_name):
-    director_params = {
-        "key": kofic_key,
-        "directorNm": director_name,
-    }
-    director_response = requests.get(url=kofic_title_url, params=director_params)
-    if director_response.status_code == 200:
-        data = director_response.json()
-        return data['movieListResult']['movieList']
-    else: return None
-
-
-def get_ranking(date_str):
-    week_ranking_params = {
-        "key": kofic_key,
-        "targetDt": date_str,  # format: yyyymmdd (ex. 20210906)
-        "weekGb": "0",
-    }
-    week_response = requests.get(url=kofic_week_ranking_url, params=week_ranking_params)
-    if week_response.status_code == 200:
-        data = week_response.json()
+def get_ranking(date_str, multi_type=None, nation_type=None):
+    ranking_params = dict()
+    ranking_params["key"] = kofic_key
+    ranking_params["targetDt"] = date_str  # format: yyyymmdd
+    if multi_type is not None:
+        ranking_params["multiMovieYn"] = multi_type  # Y: 다양성 영화, N: 상업 영화
+    if nation_type is not None:
+        ranking_params["repNationCd"] = nation_type  # K: 한국영화, F: 외국 영화
+    ranking_response = requests.get(url=kofic_week_ranking_url, params=ranking_params)
+    if ranking_response.status_code == 200:
+        data = ranking_response.json()
         return data['boxOfficeResult']['weeklyBoxOfficeList']
     else: return None
-
-
-def from_opendate(start_year, end_year):  # format: yyyy (ex. 2021)
-    opendate_params = {
-        "key": kofic_key,
-        "openStartDt": start_year,
-        "openEndDt": end_year,
-    }
-    open_response = requests.get(url=kofic_title_url, params=opendate_params)
-    if open_response.status_code == 200:
-        data = open_response.json()
-        return data['movieListResult']['movieList']
-
-def from_nation(nation_name):
-    if nation_code[nation_name] is not None:
-        nation_params = {
-            "key": kofic_key,
-            "repNationCd": nation_code[nation_name],
-        }
-    else: return None
-
-    nation_response = requests.get(url=kofic_title_url, params=nation_params)
-    if nation_response.status_code == 200:
-        data = nation_response.json()
-        return data['movieListResult']['movieList']
-    else: return None
-
 
 def get_common_code():
     code_params = {
