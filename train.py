@@ -254,8 +254,8 @@ def main(opt):
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     cpu_device = "cpu"
 
-    classes = ["hello", "sorry", "thank", "emergency", "weather", "help", "buy", "negative", "season", "unknown"]
-    label_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    classes = ["unknown", "hello", "manual", "title", "actor", "director", "rank", "year", "country"]
+    label_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
     if opt.test_only == False:
         print(colorstr("red", "bold", "Train: ") + ', '.join(f'{k}={v}' for k, v in vars(opt).items()))
