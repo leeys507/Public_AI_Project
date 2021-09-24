@@ -148,7 +148,8 @@ def get_ranking(date_str, multi_type=None, nation_type=None):
     ranking_response = requests.get(url=kofic_week_ranking_url, params=ranking_params)
     if ranking_response.status_code == 200:
         data = ranking_response.json()
-        return data
+        return data['boxOfficeResult']['weeklyBoxOfficeList']
+    else: return None
 
 def get_common_code():
     code_params = {
