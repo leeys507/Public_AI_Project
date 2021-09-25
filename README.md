@@ -7,7 +7,7 @@
 <div>
 Movie Information Chatbot<br>
 Movie information data from https://www.kobis.or.kr/<br>
-self.classes = ["unknown", "hello", "manual", "title", <br>
+classes = ["unknown", "hello", "manual", "title", <br>
 "actor", "director", "rank", "year", "country"]<br>
 Training Model: CNN-LSTM<br>
 </div>
