@@ -1,5 +1,6 @@
 from random import shuffle
-from typing import Sequence
+
+from PyQt5 import QtWidgets
 import torch
 # from torchtext.data import Field, TabularDataset, BucketIterator
 from torchtext.legacy.data import Field, TabularDataset, BucketIterator, ReversibleField
@@ -259,3 +260,8 @@ def load_metrics(load_path, device):
     print(f'Model loaded from <== {load_path}')
     
     return state_dict['train_loss_list'], state_dict['valid_loss_list'], state_dict['global_steps_list']
+
+# UI method
+def show_messagebox(title: str, text: str):
+   QtWidgets.QMessageBox.information(None, title, text, 
+        QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.NoButton)

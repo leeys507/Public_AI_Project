@@ -107,7 +107,7 @@ nation_code = {
     '기타_9': '22049999',
 }
 
-def get_info(title=None, director=None, start_year=None, end_year=None, nation_name=None):
+def get_info(title=None, director=None, start_year=None, end_year=None, nation_name=None, curPage=1, itemPerPage=3):
     info_params = dict()
     info_params["key"] = kofic_key
 
@@ -124,6 +124,9 @@ def get_info(title=None, director=None, start_year=None, end_year=None, nation_n
     if nation_name is not None:
         if nation_code[nation_name] is not None:
             info_params["repNationCd"] = nation_code[nation_name]
+
+    info_params["curPage"] = curPage
+    info_params["itemPerPage"] = itemPerPage
 
     info_response = requests.get(url=kofic_movie_url, params=info_params)
 
@@ -146,11 +149,12 @@ def get_info(title=None, director=None, start_year=None, end_year=None, nation_n
     else: return None
 
 
-
-def get_actor_info(actor):
+def get_actor_info(actor, curPage=1, itemPerPage=3):
     actor_params = {
         "key": kofic_key,
-        "peopleNm": actor
+        "peopleNm": actor,
+        "curPage": curPage,
+        "itemPerPage": itemPerPage
     }
     actor_response = requests.get(url=kofic_actor_url, params=actor_params)
     if actor_response.status_code == 200:
@@ -158,7 +162,6 @@ def get_actor_info(actor):
         return data['peopleListResult']['peopleList']
     else:
         return None
-
 
 
 def get_ranking(date_str, multi_type=None, nation_type=None):
