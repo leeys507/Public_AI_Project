@@ -285,10 +285,10 @@ class Ui_MainWindow(object):
         self.messageListBox.setAlignment(QtCore.Qt.AlignRight)
         self.messageListBox.insertPlainText(text)
         self.messageListBox.append("\n")
+        self.messageListBox.moveCursor(QtGui.QTextCursor.End)
 
         self.sendMessageButton.setDisabled(True)
         self.sendMessageBox.setFocus()
-        self.messageListBox.moveCursor(QtGui.QTextCursor.End)
 
         if self.check_get_info == False:
             self.prediction_chatbot_message(text)
@@ -337,12 +337,13 @@ class Ui_MainWindow(object):
 
 
     # 챗봇 메시지
-    def reply_chatbot_message(self, text):
+    def reply_chatbot_message(self, text: str):
         self.messageListBox.setTextColor(QtGui.QColor(0, 0, 255))
         self.messageListBox.setAlignment(QtCore.Qt.AlignLeft)
         self.messageListBox.insertPlainText(text)
         self.messageListBox.append("\n")
         self.messageListBox.moveCursor(QtGui.QTextCursor.End)
+
 
     # 사용자 메시지 예측
     def prediction_chatbot_message(self, text):
