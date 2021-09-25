@@ -5,10 +5,11 @@
 </p>
 <br>
 <div>
-Movie information Chatbot
+Movie Information Chatbot<br>
 Movie information data from https://www.kobis.or.kr/<br>
 self.classes = ["unknown", "hello", "manual", "title", <br>
-"actor", "director", "rank", "year", "country"]
+"actor", "director", "rank", "year", "country"]<br>
+Training Model: CNN-LSTM<br>
 </div>
 
 <br>
