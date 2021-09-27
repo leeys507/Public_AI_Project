@@ -5,7 +5,7 @@ import os
 import glob
 
 # key, endpoint
-subscription_key = '539b71356bc54e8a9655d3c59e47e625'
+subscription_key = 'your key'
 endpoint = 'https://koreacentral.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1'
 
 headers = {
