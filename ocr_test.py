@@ -15,7 +15,7 @@ elif platform.system() == 'Windows': # Windows
 plt.rcParams['axes.unicode_minus'] = False
 
 # setting api parameters
-subscription_key = 'bb2cc1a868344e73a31aa6bbf88636b5'
+subscription_key = 'your key'
 vision_base_url = 'https://ai4scattervision.cognitiveservices.azure.com/vision/v3.2/'
 ocr_url = vision_base_url + 'ocr'
 
