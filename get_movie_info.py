@@ -1,7 +1,7 @@
 import requests
 import json
 
-kofic_key = "40c4fa95d44dd845656317ab34c4eaaf"
+kofic_key = "your key"
 kofic_movie_url = "http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieList.json"
 movie_detail_url = "http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieInfo.json"
 kofic_actor_url = "http://www.kobis.or.kr/kobisopenapi/webservice/rest/people/searchPeopleList.json"
