@@ -44,6 +44,7 @@ def get_actor(actor: str, curPage, itmePerPage):
                     if i != len(filmo_list) - 1:
                         info += ", "
 
+                info += "\n"
                 info_list.append(info)
 
             return info_list
@@ -234,6 +235,7 @@ def summary_information(results):
             if i != len(result['movieInfo']['actors']) - 1:
                 info += ", "
         
+        info += "\n"
         info_list.append(info)
     
     return info_list

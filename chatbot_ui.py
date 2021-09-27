@@ -22,7 +22,7 @@ import random
 import datetime
 from unicodedata import normalize
 from eunjeon import Mecab
-from reply import SCRIPT_LIST
+from reply import SCRIPT_LIST,AFTER_FIND_INFO
 
 
 class Ui_MainWindow(object):
@@ -34,7 +34,7 @@ class Ui_MainWindow(object):
 
         self.model = None
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        self.classes = ["unknown", "hello", "manual", "title", "actor", "director", "rank", "year", "country"]
+        self.classes = ["unknown", "hello", "manual", "title", "actor", "director", "rank", "year", "country", "setting"]
         self.tokenize = Mecab()
         self.cpu_device = "cpu"
         self.softmax = torch.nn.Softmax(dim=1)
@@ -256,7 +256,7 @@ class Ui_MainWindow(object):
     # Function -------------------------------------------------------------------------------------------------------------
     def add_event(self):
         self.actionExit.triggered.connect(QtWidgets.qApp.quit)
-        self.sendMessageButton.clicked.connect(self.send_message_button_clicked)
+        self.sendMessageButton.clicked.connect(lambda: self.send_message_button_clicked(double_new_line=True))
         self.sendMessageBox.keyPressEvent = self.send_message_keypress_event
         self.messageSaveDirectorySearchButton.clicked.connect(self.search_msg_save_folder_clicked)
         self.modelSearchButton.clicked.connect(self.search_model_folder_clicked)
@@ -272,7 +272,7 @@ class Ui_MainWindow(object):
         self.cancelButton.clicked.connect(self.cancel_button_clicked)
 
     # 사용자 메시지
-    def send_message_button_clicked(self):
+    def send_message_button_clicked(self, double_new_line: bool=True):
         text = self.sendMessageBox.toPlainText()
         self.sendMessageBox.clear()
 
@@ -284,64 +284,27 @@ class Ui_MainWindow(object):
         self.messageListBox.setTextColor(QtGui.QColor(255, 0, 0))
         self.messageListBox.setAlignment(QtCore.Qt.AlignRight)
         self.messageListBox.insertPlainText(text)
-        self.messageListBox.append("\n")
+        if double_new_line == True:
+            self.messageListBox.append("\n")
+        else:
+            self.messageListBox.append("")
         self.messageListBox.moveCursor(QtGui.QTextCursor.End)
 
         self.sendMessageButton.setDisabled(True)
         self.sendMessageBox.setFocus()
 
-        if self.check_get_info == False:
-            self.prediction_chatbot_message(text)
-        else:
-            if self.label_name == "rank" and (text == "ㄴ" or text == "n"): # 순위일 때 취소
-                self.reply_chatbot_message(SCRIPT_LIST["cancel"][random.randrange(0, len(SCRIPT_LIST["cancel"]))])
-                self.next_and_cancel_button_enable(False)
-                self.reset_current_param()
-                return
-
-            if self.continue_search == True and (text != "ㅇ" and text != "y"):
-                self.reply_chatbot_message(SCRIPT_LIST["cancel"][random.randrange(0, len(SCRIPT_LIST["cancel"]))])
-                self.next_and_cancel_button_enable(False)
-                self.reset_current_param()
-                return
-            
-            if self.continue_search == False:
-                self.current_search_text = text
-            else:
-                text = self.current_search_text
-
-            info_list = self.get_information(text)
-
-            if info_list is not None:
-                for info in info_list:
-                    self.reply_chatbot_message(info)
-
-                if self.label_name == "rank":
-                    self.reset_current_param()
-                    self.reply_chatbot_message(SCRIPT_LIST["other"][random.randrange(0, len(SCRIPT_LIST["other"]))])
-                    return
-                else:
-                    self.continue_search = True
-                    self.next_and_cancel_button_enable(True)
-                    self.pageLabel.setText(str(self.current_page))
-                
-                self.current_page += 1
-                self.reply_chatbot_message(SCRIPT_LIST["next"][random.randrange(0, len(SCRIPT_LIST["next"]))])
-
-            else:
-                if self.continue_search == True:
-                    self.reply_chatbot_message(SCRIPT_LIST["end"][random.randrange(0, len(SCRIPT_LIST["end"]))])
-                else:
-                    self.reply_chatbot_message(SCRIPT_LIST["none"][random.randrange(0, len(SCRIPT_LIST["none"]))])
-                self.reset_current_param()
+        self.show_information(text)
 
 
     # 챗봇 메시지
-    def reply_chatbot_message(self, text: str):
+    def reply_chatbot_message(self, text: str, double_new_line: bool=True):
         self.messageListBox.setTextColor(QtGui.QColor(0, 0, 255))
         self.messageListBox.setAlignment(QtCore.Qt.AlignLeft)
         self.messageListBox.insertPlainText(text)
-        self.messageListBox.append("\n")
+        if double_new_line == True:
+            self.messageListBox.append("\n")
+        else:
+            self.messageListBox.append("")
         self.messageListBox.moveCursor(QtGui.QTextCursor.End)
 
 
@@ -354,40 +317,13 @@ class Ui_MainWindow(object):
         top_idx = top_idx.indices.numpy().reshape(-1)
         pred_str = self.classes[top_idx[0]]
 
-        if top_idx != 0 and top_idx != 1 and top_idx != 2:
+        if top_idx != 0 and top_idx != 1 and top_idx != 2 and top_idx != 9: # unknown, hello, manual, setting
             self.check_get_info = True
             self.label_name = pred_str
         else:
             self.check_get_info = False
-        
-        self.reply_chatbot_message(SCRIPT_LIST[pred_str][random.randrange(0, len(SCRIPT_LIST[pred_str]))])
 
-        if(pred_str == "rank"):
-            nation_type = None
-            add_nation_str = ""
-
-            if "한국" in text:
-                nation_type = "K"
-                add_nation_str = "(한국 영화)"
-            elif "외국" in text:
-                nation_type = "F"
-                add_nation_str = "(외국 영화)"
-            
-            current = datetime.datetime.now()
-
-            date = (current - datetime.timedelta(days=7)).strftime("%Y-%m-%d")
-            self.reply_chatbot_message(date + " 기준 " + add_nation_str +"\n")
-
-            info_list = get_rank((current - datetime.timedelta(days=7)).strftime("%Y%m%d"), nation_type)
-
-            if info_list is not None:
-                for info in info_list:
-                    self.reply_chatbot_message(info)
-
-                self.reply_chatbot_message(SCRIPT_LIST["rank_next"][random.randrange(0, len(SCRIPT_LIST["rank_next"]))])
-            else:
-                self.reply_chatbot_message(SCRIPT_LIST["none"][random.randrange(0, len(SCRIPT_LIST["none"]))])
-
+        self.direct_reply_chatbot_msg(text, pred_str)
     # ----------------------------------------------------------------------------------------------------------------------
     
 
@@ -599,3 +535,88 @@ class Ui_MainWindow(object):
     def cancel_button_clicked(self):
         self.sendMessageBox.setText("N")
         self.send_message_button_clicked()
+
+    
+    def direct_reply_chatbot_msg(self, text, pred_str):
+        self.reply_chatbot_message(SCRIPT_LIST[pred_str][random.randrange(0, len(SCRIPT_LIST[pred_str]))], False)
+
+        if pred_str == "rank":
+            nation_type = None
+            add_nation_str = ""
+
+            if "한국" in text:
+                nation_type = "K"
+                add_nation_str = "(한국 영화)"
+            elif "외국" in text:
+                nation_type = "F"
+                add_nation_str = "(외국 영화)"
+            
+            current = datetime.datetime.now()
+
+            date = (current - datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+            self.reply_chatbot_message(date + " 기준 " + add_nation_str)
+
+            info_list = get_rank((current - datetime.timedelta(days=7)).strftime("%Y%m%d"), nation_type)
+
+            if info_list is not None:
+                for info in info_list:
+                    self.reply_chatbot_message(info, False)
+
+                self.reply_chatbot_message(SCRIPT_LIST["rank_next"][random.randrange(0, len(SCRIPT_LIST["rank_next"]))])
+            else:
+                self.reply_chatbot_message(SCRIPT_LIST["none"][random.randrange(0, len(SCRIPT_LIST["none"]))])
+
+        elif pred_str == "setting":
+            self.reply_chatbot_message(f"Page: {self.current_page}, List: {self.list_count}, Nation: {'All' if self.nation is None or self.nation == '' else self.nation}")
+
+
+    def show_information(self, text):
+        if self.check_get_info == False:
+            self.prediction_chatbot_message(text)
+        else:
+            if self.label_name == "rank" and (text == "ㄴ" or text == "n"): # 순위일 때 취소
+                self.reply_chatbot_message(SCRIPT_LIST["cancel"][random.randrange(0, len(SCRIPT_LIST["cancel"]))])
+                self.next_and_cancel_button_enable(False)
+                self.reset_current_param()
+                return
+
+            if self.continue_search == True and (text != "ㅇ" and text != "y"):
+                self.reply_chatbot_message(SCRIPT_LIST["cancel"][random.randrange(0, len(SCRIPT_LIST["cancel"]))])
+                self.next_and_cancel_button_enable(False)
+                self.reset_current_param()
+                return
+
+            info_list = self.get_information(text)
+
+            if info_list is not None:
+                if self.continue_search == False:
+                    if self.label_name != "rank":
+                        self.reply_chatbot_message(AFTER_FIND_INFO["reply"][random.randrange(0, len(AFTER_FIND_INFO["reply"]))].format(text))
+                    else:
+                        self.reply_chatbot_message(AFTER_FIND_INFO["rank"][random.randrange(0, len(AFTER_FIND_INFO["rank"]))].format(text))
+
+                    self.current_search_text = text
+                else:
+                    text = self.current_search_text
+
+                for info in info_list:
+                    self.reply_chatbot_message(info, False)
+
+                if self.label_name == "rank":
+                    self.reset_current_param()
+                    self.reply_chatbot_message(SCRIPT_LIST["other"][random.randrange(0, len(SCRIPT_LIST["other"]))])
+                    return
+                else:
+                    self.continue_search = True
+                    self.next_and_cancel_button_enable(True)
+                    self.pageLabel.setText(str(self.current_page))
+                
+                self.current_page += 1
+                self.reply_chatbot_message(SCRIPT_LIST["next"][random.randrange(0, len(SCRIPT_LIST["next"]))])
+
+            else:
+                if self.continue_search == True:
+                    self.reply_chatbot_message(SCRIPT_LIST["end"][random.randrange(0, len(SCRIPT_LIST["end"]))])
+                else:
+                    self.reply_chatbot_message(SCRIPT_LIST["none"][random.randrange(0, len(SCRIPT_LIST["none"]))])
+                self.reset_current_param()
