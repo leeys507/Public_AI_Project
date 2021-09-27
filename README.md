@@ -1,5 +1,6 @@
 # AI_Project
-- car detection and license to text
-- face, mask face, person detection and tracking
-- speech into text and classification
-- key-point compare with annotation and prediction
+- Car Detection and license plate to text
+- Face, Mask face, Person detection and tracking
+- Speech to text and classification
+- Key-point compare with annotation and prediction
+- Movie Information Chatbot
