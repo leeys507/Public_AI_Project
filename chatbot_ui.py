@@ -585,6 +585,11 @@ class Ui_MainWindow(object):
                 self.next_and_cancel_button_enable(False)
                 self.reset_current_param()
                 return
+            
+            if self.continue_search == False:
+                self.current_search_text = text
+            else:
+                text = self.current_search_text
 
             info_list = self.get_information(text)
 
@@ -594,10 +599,6 @@ class Ui_MainWindow(object):
                         self.reply_chatbot_message(AFTER_FIND_INFO["reply"][random.randrange(0, len(AFTER_FIND_INFO["reply"]))].format(text))
                     else:
                         self.reply_chatbot_message(AFTER_FIND_INFO["rank"][random.randrange(0, len(AFTER_FIND_INFO["rank"]))].format(text))
-
-                    self.current_search_text = text
-                else:
-                    text = self.current_search_text
 
                 for info in info_list:
                     self.reply_chatbot_message(info, False)
